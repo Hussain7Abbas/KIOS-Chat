@@ -122,6 +122,9 @@ Run `make help` for all targets. Common ones:
 | `make dev` | Next.js dev server |
 | `make worker` | BullMQ sub-agent worker |
 | `make build` / `make start` | Production build / start |
+| `make pm2-deploy` / `make pm2-start` | PM2: build + start/reload, or start ecosystem only |
+| `make pm2-restart` / `make pm2-reload` / `make pm2-stop` / `make pm2-delete` | PM2 lifecycle |
+| `make pm2-logs` / `make pm2-status` | PM2 logs / process list |
 | `make typecheck` / `make lint` | Quality checks |
 
 Equivalent without Make: `bun install`, `bunx prisma …`, `bun run dev`, `bun run worker`, etc.
@@ -135,11 +138,15 @@ Equivalent without Make: `bun install`, `bunx prisma …`, `bun run dev`, `bun r
 3. Build, then start PM2:
 
 ```bash
-bun run build
-pm2 start ecosystem.config.cjs
+make pm2-deploy       # bun run build + pm2 startOrReload ecosystem.config.cjs
+# or, manually:
+# bun run build && pm2 start ecosystem.config.cjs
+
 pm2 save              # optional: persist the process list
 pm2 startup           # optional: resurrect after reboot (follow pm2’s printed instructions)
 ```
+
+Other targets: `make pm2-start`, `make pm2-restart`, `make pm2-reload`, `make pm2-stop`, `make pm2-delete`, `make pm2-logs`, `make pm2-status` (see `make help`).
 
 `bun` must be on `PATH` for the user running PM2. To run more BullMQ consumers, increase `instances` on `kios-chat-worker` in the ecosystem file.
 

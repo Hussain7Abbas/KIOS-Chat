@@ -3,9 +3,12 @@
 
 SHELL := /bin/bash
 
+ECOSYSTEM := ecosystem.config.cjs
+
 .PHONY: help install setup env docker-up docker-down docker-logs redis-up redis-down redis-logs \
 	db-generate db-migrate db-deploy db-migrate-deploy db-reset db-push db-seed db-studio \
-	dev worker build start lint typecheck clean
+	dev worker build start lint typecheck clean \
+	pm2-start pm2-stop pm2-restart pm2-reload pm2-delete pm2-logs pm2-status pm2-deploy
 
 help:
 	@echo "KIOS Chat — common commands"
@@ -38,6 +41,16 @@ help:
 	@echo "    make worker       BullMQ sub-agent worker (terminal 2; needs Redis)"
 	@echo "    make build        next build"
 	@echo "    make start        next start (after build)"
+	@echo ""
+	@echo "  Production (PM2 — needs pm2 on PATH; see $(ECOSYSTEM))"
+	@echo "    make pm2-deploy   bun run build, then start or reload ecosystem"
+	@echo "    make pm2-start    pm2 start $(ECOSYSTEM)"
+	@echo "    make pm2-restart  pm2 restart $(ECOSYSTEM)"
+	@echo "    make pm2-reload   pm2 reload $(ECOSYSTEM) (graceful where supported)"
+	@echo "    make pm2-stop     pm2 stop $(ECOSYSTEM)"
+	@echo "    make pm2-delete   pm2 delete $(ECOSYSTEM)"
+	@echo "    make pm2-logs     pm2 logs (all apps)"
+	@echo "    make pm2-status   pm2 status"
 	@echo ""
 	@echo "  Quality"
 	@echo "    make lint         eslint"
@@ -115,6 +128,31 @@ build:
 
 start:
 	bun run start
+
+pm2-start:
+	@test -f $(ECOSYSTEM) || (echo "Missing $(ECOSYSTEM)" && exit 1)
+	pm2 start $(ECOSYSTEM)
+
+pm2-stop:
+	pm2 stop $(ECOSYSTEM)
+
+pm2-restart:
+	pm2 restart $(ECOSYSTEM)
+
+pm2-reload:
+	pm2 reload $(ECOSYSTEM)
+
+pm2-delete:
+	pm2 delete $(ECOSYSTEM)
+
+pm2-logs:
+	pm2 logs
+
+pm2-status:
+	pm2 status
+
+pm2-deploy: build
+	pm2 startOrReload $(ECOSYSTEM)
 
 lint:
 	bun run lint
