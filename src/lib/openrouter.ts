@@ -35,7 +35,7 @@ export async function streamChat(params: StreamChatParams) {
 
 export async function generateThreadTitle(firstMessage: string): Promise<string> {
   const response = await client.chat.completions.create({
-    model: "openai/gpt-4o-mini",
+    model: process.env.NEXT_PUBLIC_OPENROUTER_DEFAULT_MODEL || "openai/gpt-4o-mini",
     messages: [
       {
         role: "system",

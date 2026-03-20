@@ -1,9 +1,9 @@
-import { v2 as cloudinary } from "cloudinary"
+import ImageKit from "imagekit"
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+const imagekit = new ImageKit({
+  publicKey: process.env.IMAGEKIT_PUBLIC_KEY!,
+  privateKey: process.env.IMAGEKIT_PRIVATE_KEY!,
+  urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT!,
 })
 
 const ALLOWED_IMAGE_TYPES = [
@@ -43,33 +43,31 @@ export function validateFile(file: File): { valid: boolean; error?: string } {
   return { valid: true }
 }
 
-export function isImageType(mimeType: string): boolean {
+function isImageType(mimeType: string): boolean {
   return ALLOWED_IMAGE_TYPES.includes(mimeType)
 }
 
-export async function uploadToCloudinary(
+export async function uploadToImageKit(
   file: File
 ): Promise<{ url: string; publicId: string }> {
   const bytes = await file.arrayBuffer()
   const buffer = Buffer.from(bytes)
 
-  const resourceType = isImageType(file.type) ? "image" : "raw"
-
   return new Promise((resolve, reject) => {
-    cloudinary.uploader
-      .upload_stream(
-        {
-          resource_type: resourceType,
-          folder: "kios-chat",
-        },
-        (error, result) => {
-          if (error || !result) {
-            reject(error ?? new Error("Upload failed"))
-            return
-          }
-          resolve({ url: result.secure_url, publicId: result.public_id })
+    imagekit.upload(
+      {
+        file: buffer,
+        fileName: file.name,
+        folder: "/kios-chat",
+        useUniqueFileName: true,
+      },
+      (error, result) => {
+        if (error || !result) {
+          reject(error ?? new Error("Upload failed"))
+          return
         }
-      )
-      .end(buffer)
+        resolve({ url: result.url, publicId: result.fileId })
+      }
+    )
   })
 }

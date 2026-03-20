@@ -21,7 +21,7 @@ model User {
   threadsRemaining  Int       @default(3)
   threadsPurchased  Int       @default(0)
   agentPrompt       String?   @db.Text
-  preferredModel    String    @default("openai/gpt-4o")
+  preferredModel    String    @default("openai/gpt-4o-mini")
 
   sessions          Session[]
   accounts          Account[]
