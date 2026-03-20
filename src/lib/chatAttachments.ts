@@ -1,10 +1,13 @@
 import type { ChatCompletionContentPart } from "openai/resources/chat/completions"
 import { isPdfAttachment } from "@/lib/mime"
+import { resolveOpenRouterPdfFileData } from "@/lib/openRouterPdf"
 
 export interface FileForChat {
   url: string
   mimeType: string
   name: string
+  /** Byte size from upload; used when sending PDFs as base64 to OpenRouter. */
+  size?: number
 }
 
 const MAX_TEXT_ATTACHMENT_CHARS = 120_000
@@ -34,7 +37,8 @@ async function extractTextFileFromUrl(
 
 /**
  * Builds user message content for OpenRouter:
- * - PDFs: `file` parts with a **public** URL (`file_data`) — OpenRouter fetches and parses them.
+ * - PDFs: OpenRouter `type: "file"` parts (`filename` + `file_data`). `file_data` is a
+ *   public URL by default, or `data:application/pdf;base64,...` when `OPENROUTER_PDF_FILE_DATA=base64`.
  * - Images: `image_url` parts.
  * - Plain text / CSV: fetched server-side and inlined (small text formats only).
  */
@@ -60,11 +64,15 @@ export async function buildUserMessageContent(
     }
 
     if (isPdfAttachment(file.mimeType, file.name)) {
+      const fileData = await resolveOpenRouterPdfFileData({
+        url: file.url,
+        sizeBytes: file.size,
+      })
       pdfParts.push({
         type: "file",
         file: {
           filename: file.name,
-          file_data: file.url,
+          file_data: fileData,
         },
       })
       continue

@@ -6,8 +6,8 @@ import {
   streamChat,
   generateThreadTitle,
   historyIncludesOpenRouterPdfFile,
-  type OpenRouterFileParserPlugin,
 } from "@/lib/openrouter"
+import { createOpenRouterPdfParserPlugin } from "@/lib/openRouterPdf"
 import { buildUserMessageContent } from "@/lib/chatAttachments"
 import type { StreamChatMessage } from "@/lib/openrouter"
 
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
         role: true,
         content: true,
         files: {
-          select: { url: true, mimeType: true, name: true },
+          select: { url: true, mimeType: true, name: true, size: true },
         },
       },
     })
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       (m) => m.role === "user" && m.files.length > 0
     )
     const attachmentSystemHint = hasAnyUploadedDocs
-      ? `\n\n[Document uploads]\nPDFs are supplied to the model via OpenRouter file inputs (public URLs). Images use vision. Small text/CSV attachments may appear as \"--- Attached file:\" excerpts inlined in the user message. Answer using that material. Do not claim you cannot access PDFs or uploads when a file part or excerpt is present. If only a filename appears with an error note, say the file could not be loaded and suggest re-uploading or pasting text.`
+      ? `\n\n[Document uploads]\nPDFs are sent to the model as OpenRouter file parts (URL or inline base64 per server config). Images use vision. Small text/CSV attachments may appear as \"--- Attached file:\" excerpts inlined in the user message. Answer using that material. Do not claim you cannot access PDFs or uploads when a file part or excerpt is present. If only a filename appears with an error note, say the file could not be loaded and suggest re-uploading or pasting text.`
       : ""
 
     const history: StreamChatMessage[] = await Promise.all(
@@ -88,10 +88,9 @@ export async function POST(request: NextRequest) {
       })
     )
 
-    const openRouterPlugins: OpenRouterFileParserPlugin[] | undefined =
-      historyIncludesOpenRouterPdfFile(history)
-        ? [{ id: "file-parser", pdf: { engine: "pdf-text" } }]
-        : undefined
+    const openRouterPlugins = historyIncludesOpenRouterPdfFile(history)
+      ? [createOpenRouterPdfParserPlugin()]
+      : undefined
 
     // Get global agent prompt from the admin
     const admin = await prisma.user.findFirst({
