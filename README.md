@@ -122,6 +122,7 @@ Run `make help` for all targets. Common ones:
 | `make dev` | Next.js dev server |
 | `make worker` | BullMQ sub-agent worker |
 | `make build` / `make start` | Production build / start |
+| `make sync` | Server update: `git pull`, `prisma generate`, `migrate deploy`, `build`, `pm2 restart` |
 | `make pm2-deploy` / `make pm2-start` | PM2: build + start/reload, or start ecosystem only |
 | `make pm2-restart` / `make pm2-reload` / `make pm2-stop` / `make pm2-delete` | PM2 lifecycle |
 | `make pm2-logs` / `make pm2-status` | PM2 logs / process list |
@@ -147,6 +148,8 @@ pm2 startup           # optional: resurrect after reboot (follow pm2’s printed
 ```
 
 Other targets: `make pm2-start`, `make pm2-restart`, `make pm2-reload`, `make pm2-stop`, `make pm2-delete`, `make pm2-logs`, `make pm2-status` (see `make help`).
+
+For routine server updates after the ecosystem is already under PM2: `make sync` runs `git pull`, `prisma generate`, `prisma migrate deploy`, `bun run build`, and `pm2 restart ecosystem.config.cjs`. PM2 must already be managing those apps (`make pm2-start` or a prior deploy); `sync` does not run `bun install`—add new dependencies separately.
 
 `bun` must be on `PATH` for the user running PM2. To run more BullMQ consumers, increase `instances` on `kios-chat-worker` in the ecosystem file.
 

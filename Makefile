@@ -7,7 +7,7 @@ ECOSYSTEM := ecosystem.config.cjs
 
 .PHONY: help install setup env docker-up docker-down docker-logs redis-up redis-down redis-logs \
 	db-generate db-migrate db-deploy db-migrate-deploy db-reset db-push db-seed db-studio \
-	dev worker build start lint typecheck clean \
+	dev worker build start lint typecheck clean sync \
 	pm2-start pm2-stop pm2-restart pm2-reload pm2-delete pm2-logs pm2-status pm2-deploy
 
 help:
@@ -43,6 +43,7 @@ help:
 	@echo "    make start        next start (after build)"
 	@echo ""
 	@echo "  Production (PM2 — needs pm2 on PATH; see $(ECOSYSTEM))"
+	@echo "    make sync         git pull + prisma generate + migrate deploy + build + pm2 restart"
 	@echo "    make pm2-deploy   bun run build, then start or reload ecosystem"
 	@echo "    make pm2-start    pm2 start $(ECOSYSTEM)"
 	@echo "    make pm2-restart  pm2 restart $(ECOSYSTEM)"
@@ -153,6 +154,13 @@ pm2-status:
 
 pm2-deploy: build
 	pm2 startOrReload $(ECOSYSTEM)
+
+sync:
+	git pull
+	bunx prisma generate
+	bunx prisma migrate deploy
+	bun run build
+	pm2 restart $(ECOSYSTEM)
 
 lint:
 	bun run lint
