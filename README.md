@@ -24,6 +24,7 @@ Full-stack AI chat app: **Next.js 16** (App Router), **TypeScript**, **Prisma**,
 | Files | ImageKit |
 | Payments | Stripe |
 | Sub-agent jobs | BullMQ + Redis (`bun run worker`) |
+| Production processes | [PM2](https://pm2.keymetrics.io/) — `ecosystem.config.cjs` (web + worker) |
 
 ## Architecture (high level)
 
@@ -125,6 +126,23 @@ Run `make help` for all targets. Common ones:
 
 Equivalent without Make: `bun install`, `bunx prisma …`, `bun run dev`, `bun run worker`, etc.
 
+## Production with PM2
+
+[`ecosystem.config.cjs`](ecosystem.config.cjs) defines two apps: **`kios-chat`** (`bun run start`, Next.js) and **`kios-chat-worker`** (`bun run src/workers/subagent-worker.ts`, BullMQ). Use this on a server instead of separate shells for `make start` and `make worker`.
+
+1. Set environment variables on the host (or inject via your platform). Next and the worker read the same `.env` patterns as local development.
+2. Run migrations: `make db-deploy` (or `bunx prisma migrate deploy`).
+3. Build, then start PM2:
+
+```bash
+bun run build
+pm2 start ecosystem.config.cjs
+pm2 save              # optional: persist the process list
+pm2 startup           # optional: resurrect after reboot (follow pm2’s printed instructions)
+```
+
+`bun` must be on `PATH` for the user running PM2. To run more BullMQ consumers, increase `instances` on `kios-chat-worker` in the ecosystem file.
+
 ## Environment variables
 
 Copy and edit from the example file:
@@ -163,7 +181,7 @@ make db-seed
 ## Sub-agents
 
 1. Ensure **Redis** is running and **`REDIS_URL`** is set.
-2. Run **`make worker`** alongside **`make dev`**.
+2. Run **`make worker`** alongside **`make dev`** (local). In production, run the worker via PM2 — see [Production with PM2](#production-with-pm2).
 3. In **Dashboard → Agent settings**, define sub-agents (tool name, instructions, model, output format, parameters).
 4. During chat, the main model may emit **tool calls**; the API creates **sub-thread** rows, enqueues jobs, waits for the worker, streams **SSE** updates (`subthread`, `threadStatus`), and continues the reply.
 
