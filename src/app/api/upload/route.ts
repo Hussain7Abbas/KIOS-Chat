@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAuthApi } from "@/lib/guards"
 import { prisma } from "@/lib/prisma"
 import { validateFile, uploadToImageKit } from "@/lib/upload"
+import { resolveUploadedMimeType } from "@/lib/mime"
 
 export async function POST(request: NextRequest) {
   const { session, error } = await requireAuthApi(request)
@@ -42,13 +43,15 @@ export async function POST(request: NextRequest) {
     // Upload to ImageKit
     const { url } = await uploadToImageKit(file)
 
+    const mimeType = resolveUploadedMimeType(file)
+
     // Save to database
     const fileRecord = await prisma.file.create({
       data: {
         threadId,
         name: file.name,
         url,
-        mimeType: file.type,
+        mimeType,
         size: file.size,
       },
     })
@@ -58,7 +61,7 @@ export async function POST(request: NextRequest) {
         id: fileRecord.id,
         url: fileRecord.url,
         name: fileRecord.name,
-        mimeType: fileRecord.mimeType,
+        mimeType,
         size: fileRecord.size,
       },
       { status: 201 }

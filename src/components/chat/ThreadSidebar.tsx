@@ -5,7 +5,6 @@ import { useRouter, usePathname } from "next/navigation"
 import { useThreads, useCreateThread, useDeleteThread } from "@/hooks/useThreads"
 import { useSession, signOut } from "@/lib/auth-client"
 import { ThreadItem } from "./ThreadItem"
-import { BuyThreadsModal } from "@/components/dashboard/BuyThreadsModal"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -40,9 +39,14 @@ import Link from "next/link"
 interface ThreadSidebarProps {
   collapsed?: boolean
   onCollapseToggle?: () => void
+  onOpenBuyThreads: () => void
 }
 
-export function ThreadSidebar({ collapsed = false, onCollapseToggle }: ThreadSidebarProps) {
+export function ThreadSidebar({
+  collapsed = false,
+  onCollapseToggle,
+  onOpenBuyThreads,
+}: ThreadSidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
   const { data: session } = useSession()
@@ -50,7 +54,6 @@ export function ThreadSidebar({ collapsed = false, onCollapseToggle }: ThreadSid
   const createThread = useCreateThread()
   const deleteThread = useDeleteThread()
   const [showQuotaDialog, setShowQuotaDialog] = useState(false)
-  const [showBuyThreadsModal, setShowBuyThreadsModal] = useState(false)
 
   const threads = threadsData?.threads ?? []
   const threadsRemaining = threadsData?.threadsRemaining ?? (session?.user as { threadsRemaining?: number })?.threadsRemaining ?? 0
@@ -95,15 +98,6 @@ export function ThreadSidebar({ collapsed = false, onCollapseToggle }: ThreadSid
         <div className={`flex items-center ${collapsed ? "justify-center p-2" : "justify-between p-4"}`}>
           {collapsed ? (
             <div className="flex flex-col items-center gap-2 w-full">
-              <div className="flex flex-col items-center gap-1">
-                <MessageSquare className="h-5 w-5 text-primary shrink-0" />
-                <Badge
-                  variant={threadsRemaining <= 1 ? "destructive" : "secondary"}
-                  className="text-xs shrink-0"
-                >
-                  {threadsRemaining}
-                </Badge>
-              </div>
               {onCollapseToggle && (
                 <Button
                   variant="ghost"
@@ -114,6 +108,7 @@ export function ThreadSidebar({ collapsed = false, onCollapseToggle }: ThreadSid
                   <PanelLeft className="h-4 w-4" />
                 </Button>
               )}
+              <MessageSquare className="h-5 w-5 text-primary shrink-0" />
             </div>
           ) : (
             <>
@@ -158,6 +153,9 @@ export function ThreadSidebar({ collapsed = false, onCollapseToggle }: ThreadSid
 
         <Separator />
 
+        {/* Spacer to push menu to bottom when collapsed */}
+        {collapsed && <div className="flex-1 min-h-0" />}
+
         {/* Thread List */}
         {!collapsed && (
           <ScrollArea className="flex-1 px-2">
@@ -185,13 +183,9 @@ export function ThreadSidebar({ collapsed = false, onCollapseToggle }: ThreadSid
                   <p className="text-center text-sm text-muted-foreground">
                     No threads yet. Start a conversation!
                   </p>
-                  <BuyThreadsModal
-                    trigger={
-                      <Button variant="outline" size="sm">
-                        Buy Threads
-                      </Button>
-                    }
-                  />
+                  <Button variant="outline" size="sm" onClick={onOpenBuyThreads}>
+                    Buy Threads
+                  </Button>
                 </div>
               )}
             </div>
@@ -236,7 +230,11 @@ export function ThreadSidebar({ collapsed = false, onCollapseToggle }: ThreadSid
                 </DropdownMenuItem>
               )}
               {isAdmin && <DropdownMenuSeparator />}
-              <DropdownMenuItem onSelect={() => setShowBuyThreadsModal(true)}>
+              <DropdownMenuItem
+                onSelect={() => {
+                  queueMicrotask(() => onOpenBuyThreads())
+                }}
+              >
                 <ShoppingCart className="mr-2 h-4 w-4" />
                 Buy Threads
               </DropdownMenuItem>
@@ -252,12 +250,6 @@ export function ThreadSidebar({ collapsed = false, onCollapseToggle }: ThreadSid
           </DropdownMenu>
         </div>
       </div>
-
-      {/* Buy Threads Modal (controlled from dropdown) */}
-      <BuyThreadsModal
-        open={showBuyThreadsModal}
-        onOpenChange={setShowBuyThreadsModal}
-      />
 
       {/* Quota Dialog */}
       <Dialog open={showQuotaDialog} onOpenChange={setShowQuotaDialog}>
@@ -276,7 +268,14 @@ export function ThreadSidebar({ collapsed = false, onCollapseToggle }: ThreadSid
             >
               Cancel
             </Button>
-            <BuyThreadsModal trigger={<Button>Buy Threads</Button>} />
+            <Button
+              onClick={() => {
+                setShowQuotaDialog(false)
+                onOpenBuyThreads()
+              }}
+            >
+              Buy Threads
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

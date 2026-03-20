@@ -1,10 +1,11 @@
 "use client"
 
 import { ThreadSidebar } from "@/components/chat/ThreadSidebar"
+import { BuyThreadsModal } from "@/components/dashboard/BuyThreadsModal"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { Menu } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 
 const SIDEBAR_COLLAPSED_KEY = "kios-sidebar-collapsed"
 
@@ -15,6 +16,11 @@ export default function ChatLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
+  const [buyThreadsOpen, setBuyThreadsOpen] = useState(false)
+
+  const openBuyThreads = useCallback(() => {
+    setBuyThreadsOpen(true)
+  }, [])
 
   useEffect(() => {
     const stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY)
@@ -39,7 +45,11 @@ export default function ChatLayout({
           collapsed ? "w-16" : "w-[260px]"
         }`}
       >
-        <ThreadSidebar collapsed={collapsed} onCollapseToggle={toggleCollapsed} />
+        <ThreadSidebar
+          collapsed={collapsed}
+          onCollapseToggle={toggleCollapsed}
+          onOpenBuyThreads={openBuyThreads}
+        />
       </aside>
 
       {/* Mobile Sidebar */}
@@ -50,9 +60,15 @@ export default function ChatLayout({
           </SheetTrigger>
         </div>
         <SheetContent side="left" className="w-[260px] p-0">
-          <ThreadSidebar collapsed={false} onCollapseToggle={() => {}} />
+          <ThreadSidebar
+            collapsed={false}
+            onCollapseToggle={() => {}}
+            onOpenBuyThreads={openBuyThreads}
+          />
         </SheetContent>
       </Sheet>
+
+      <BuyThreadsModal open={buyThreadsOpen} onOpenChange={setBuyThreadsOpen} />
 
       {/* Main Content */}
       <main className="flex-1 overflow-hidden">{children}</main>

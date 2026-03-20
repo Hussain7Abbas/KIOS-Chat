@@ -1,4 +1,5 @@
 import ImageKit from "imagekit"
+import { resolveUploadedMimeType } from "@/lib/mime"
 
 const imagekit = new ImageKit({
   publicKey: process.env.IMAGEKIT_PUBLIC_KEY!,
@@ -26,10 +27,11 @@ const ALLOWED_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_DOCUMENT_TYPES]
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 
 export function validateFile(file: File): { valid: boolean; error?: string } {
-  if (!ALLOWED_TYPES.includes(file.type)) {
+  const effectiveType = resolveUploadedMimeType(file)
+  if (!ALLOWED_TYPES.includes(effectiveType)) {
     return {
       valid: false,
-      error: `File type "${file.type}" is not allowed. Allowed: images (jpg, png, gif, webp) and documents (pdf, txt, md, csv, docx).`,
+      error: `File type "${file.type || "(empty)"}" is not allowed. Allowed: images (jpg, png, gif, webp) and documents (pdf, txt, md, csv, docx).`,
     }
   }
 

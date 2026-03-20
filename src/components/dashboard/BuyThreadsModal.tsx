@@ -67,7 +67,7 @@ export function BuyThreadsModal({ trigger, open: controlledOpen, onOpenChange }:
           )}
         </DialogTrigger>
       )}
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Purchase Thread Packages</DialogTitle>
           <DialogDescription>

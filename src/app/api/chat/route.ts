@@ -2,7 +2,14 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAuthApi } from "@/lib/guards"
 import { prisma } from "@/lib/prisma"
 import { sendMessageSchema } from "@/lib/validators"
-import { streamChat, generateThreadTitle } from "@/lib/openrouter"
+import {
+  streamChat,
+  generateThreadTitle,
+  historyIncludesOpenRouterPdfFile,
+  type OpenRouterFileParserPlugin,
+} from "@/lib/openrouter"
+import { buildUserMessageContent } from "@/lib/chatAttachments"
+import type { StreamChatMessage } from "@/lib/openrouter"
 
 export async function POST(request: NextRequest) {
   const { session, error } = await requireAuthApi(request)
@@ -47,13 +54,44 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Load conversation history (last 20 messages)
-    const history = await prisma.message.findMany({
+    // Load the **last** 20 messages (chronological), not the first 20
+    const messageCount = await prisma.message.count({ where: { threadId } })
+    const skip = Math.max(0, messageCount - 20)
+    const historyRows = await prisma.message.findMany({
       where: { threadId },
       orderBy: { createdAt: "asc" },
+      skip,
       take: 20,
-      select: { role: true, content: true },
+      select: {
+        role: true,
+        content: true,
+        files: {
+          select: { url: true, mimeType: true, name: true },
+        },
+      },
     })
+
+    const hasAnyUploadedDocs = historyRows.some(
+      (m) => m.role === "user" && m.files.length > 0
+    )
+    const attachmentSystemHint = hasAnyUploadedDocs
+      ? `\n\n[Document uploads]\nPDFs are supplied to the model via OpenRouter file inputs (public URLs). Images use vision. Small text/CSV attachments may appear as \"--- Attached file:\" excerpts inlined in the user message. Answer using that material. Do not claim you cannot access PDFs or uploads when a file part or excerpt is present. If only a filename appears with an error note, say the file could not be loaded and suggest re-uploading or pasting text.`
+      : ""
+
+    const history: StreamChatMessage[] = await Promise.all(
+      historyRows.map(async (m) => {
+        if (m.role === "user" && m.files.length > 0) {
+          const content = await buildUserMessageContent(m.content, m.files)
+          return { role: m.role, content }
+        }
+        return { role: m.role, content: m.content }
+      })
+    )
+
+    const openRouterPlugins: OpenRouterFileParserPlugin[] | undefined =
+      historyIncludesOpenRouterPdfFile(history)
+        ? [{ id: "file-parser", pdf: { engine: "pdf-text" } }]
+        : undefined
 
     // Get global agent prompt from the admin
     const admin = await prisma.user.findFirst({
@@ -63,9 +101,12 @@ export async function POST(request: NextRequest) {
 
     // Stream from OpenRouter
     const completion = await streamChat({
-      messages: history.map((m: any) => ({ role: m.role, content: m.content })),
+      messages: history,
       model,
-      agentPrompt: admin?.agentPrompt ?? undefined,
+      agentPrompt:
+        [admin?.agentPrompt, attachmentSystemHint].filter(Boolean).join("") ||
+        undefined,
+      openRouterPlugins,
     })
 
     // Create a streaming response

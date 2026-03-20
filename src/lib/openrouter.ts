@@ -1,4 +1,8 @@
 import OpenAI from "openai"
+import type {
+  ChatCompletionContentPart,
+  ChatCompletionMessageParam,
+} from "openai/resources/chat/completions"
 
 const client = new OpenAI({
   apiKey: process.env.OPENROUTER_API_KEY!,
@@ -9,10 +13,34 @@ const client = new OpenAI({
   },
 })
 
+export interface StreamChatMessage {
+  role: string
+  content: string | ChatCompletionContentPart[]
+}
+
+/** OpenRouter plugin: PDF / file parsing on their side (see openrouter.ai/docs multimodal PDFs). */
+export interface OpenRouterFileParserPlugin {
+  id: "file-parser"
+  pdf: { engine: "pdf-text" | "native" | "mistral-ocr" }
+}
+
 export interface StreamChatParams {
-  messages: { role: string; content: string }[]
+  messages: StreamChatMessage[]
   model: string
   agentPrompt?: string
+  openRouterPlugins?: OpenRouterFileParserPlugin[]
+}
+
+export function historyIncludesOpenRouterPdfFile(
+  messages: StreamChatMessage[]
+): boolean {
+  for (const m of messages) {
+    if (m.role !== "user" || typeof m.content === "string") continue
+    for (const p of m.content) {
+      if (p.type === "file") return true
+    }
+  }
+  return false
 }
 
 export async function streamChat(params: StreamChatParams) {
@@ -20,17 +48,38 @@ export async function streamChat(params: StreamChatParams) {
     ? [{ role: "system" as const, content: params.agentPrompt }]
     : []
 
-  return client.chat.completions.create({
+  const conversationMessages: ChatCompletionMessageParam[] =
+    params.messages.map((m): ChatCompletionMessageParam => {
+      if (m.role === "assistant") {
+        return {
+          role: "assistant",
+          content: typeof m.content === "string" ? m.content : "",
+        }
+      }
+      if (m.role === "system") {
+        return {
+          role: "system",
+          content: typeof m.content === "string" ? m.content : "",
+        }
+      }
+      return {
+        role: "user",
+        content: m.content as string | ChatCompletionContentPart[],
+      }
+    })
+
+  const body = {
     model: params.model,
-    messages: [
-      ...systemMessages,
-      ...params.messages.map((m) => ({
-        role: m.role as "user" | "assistant" | "system",
-        content: m.content,
-      })),
-    ],
-    stream: true,
-  })
+    messages: [...systemMessages, ...conversationMessages],
+    stream: true as const,
+    ...(params.openRouterPlugins && params.openRouterPlugins.length > 0
+      ? { plugins: params.openRouterPlugins }
+      : {}),
+  }
+
+  return client.chat.completions.create(
+    body as OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming
+  )
 }
 
 export async function generateThreadTitle(firstMessage: string): Promise<string> {

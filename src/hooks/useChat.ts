@@ -1,7 +1,12 @@
 "use client"
 
 import { useState, useCallback, useRef } from "react"
+import { toast } from "sonner"
 import type { ChatMessage } from "@/types"
+
+function notifyChatError() {
+  toast.error("Something went wrong!")
+}
 
 interface UseChatOptions {
   threadId: string
@@ -58,7 +63,9 @@ export function useChat({ threadId, onThreadTitleUpdate }: UseChatOptions) {
         }
 
         const reader = res.body?.getReader()
-        if (!reader) return
+        if (!reader) {
+          throw new Error("No response body")
+        }
 
         const decoder = new TextDecoder()
         let accumulated = ""
@@ -112,6 +119,7 @@ export function useChat({ threadId, onThreadTitleUpdate }: UseChatOptions) {
         }
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return
+        notifyChatError()
         // Remove optimistic message on error
         setMessages((prev) =>
           prev.filter((m) => m.id !== optimisticMessage.id)
