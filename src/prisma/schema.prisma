@@ -83,30 +83,37 @@ enum SubThreadStatus {
 }
 
 model Thread {
-  id         String        @id @default(cuid())
-  title      String        @default("New Thread")
-  userId     String
-  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages   Message[]
-  files      File[]
-  subThreads SubThread[]
-  status     ThreadStatus  @default(IDLE)
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
-  isArchived Boolean       @default(false)
+  id                    String        @id @default(cuid())
+  title                 String        @default("New Thread")
+  userId                String
+  user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages              Message[]
+  files                 File[]
+  subThreads            SubThread[]
+  status                ThreadStatus  @default(IDLE)
+  /// Last chat turn usage (OpenRouter), optional if provider omits usage
+  lastPromptTokens      Int?
+  lastCompletionTokens  Int?
+  lastTotalTokens       Int?
+  /// Model context window for last request (from OpenRouter models API)
+  contextLength         Int?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  isArchived            Boolean       @default(false)
 
   @@index([userId])
 }
 
 model SubAgent {
-  id            String          @id @default(cuid())
-  name          String          @unique
-  instructions  String          @db.Text
+  id            String                @id @default(cuid())
+  name          String                @unique
+  instructions  String                @db.Text
   model         String
   outputFormat  String
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
   params        SubAgentParam[]
+  outputParams  SubAgentOutputParam[]
   subThreads    SubThread[]
 }
 
@@ -122,18 +129,34 @@ model SubAgentParam {
   @@index([subAgentId])
 }
 
+/// Describes expected shape of sub-agent output (hints in system prompt; not JSON Schema enforcement).
+model SubAgentOutputParam {
+  id          String   @id @default(cuid())
+  subAgentId  String
+  subAgent    SubAgent @relation(fields: [subAgentId], references: [id], onDelete: Cascade)
+  name        String
+  type        String
+  description String   @db.Text
+
+  @@index([subAgentId])
+}
+
 model SubThread {
-  id         String          @id @default(cuid())
-  threadId   String
-  thread     Thread          @relation(fields: [threadId], references: [id], onDelete: Cascade)
-  subAgentId String
-  subAgent   SubAgent        @relation(fields: [subAgentId], references: [id], onDelete: Cascade)
-  input      Json
-  output     String?         @db.Text
-  status     SubThreadStatus @default(PENDING)
-  error      String?         @db.Text
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
+  id                   String          @id @default(cuid())
+  threadId             String
+  thread               Thread          @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  subAgentId           String
+  subAgent             SubAgent        @relation(fields: [subAgentId], references: [id], onDelete: Cascade)
+  input                Json
+  output               String?         @db.Text
+  status               SubThreadStatus @default(PENDING)
+  error                String?         @db.Text
+  promptTokens         Int?
+  completionTokens     Int?
+  totalTokens          Int?
+  contextLength        Int?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
 
   @@index([threadId])
   @@index([subAgentId])

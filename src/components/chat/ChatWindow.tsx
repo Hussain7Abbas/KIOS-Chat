@@ -19,6 +19,9 @@ import {
   Layers,
 } from "lucide-react"
 import type { ChatMessage } from "@/types"
+import { useSession } from "@/lib/auth-client"
+import { ModelSelector } from "@/components/chat/ModelSelector"
+import { TokenUsageLabel } from "@/components/chat/TokenUsageLabel"
 
 interface ChatWindowProps {
   threadId: string
@@ -49,9 +52,11 @@ const SUGGESTED_PROMPTS = [
 ]
 
 export function ChatWindow({ threadId, threadTitle }: ChatWindowProps) {
-  const defaultModel = process.env.NEXT_PUBLIC_OPENROUTER_DEFAULT_MODEL || "openai/gpt-4o-mini"
+  const defaultModel =
+    process.env.NEXT_PUBLIC_OPENROUTER_DEFAULT_MODEL || "openai/gpt-4o-mini"
   const scrollEndRef = useRef<HTMLDivElement>(null)
   const queryClient = useQueryClient()
+  const { data: session } = useSession()
 
   const handleThreadTitleUpdate = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["threads"] })
@@ -67,10 +72,16 @@ export function ChatWindow({ threadId, threadTitle }: ChatWindowProps) {
     loadMessages,
     subThreads,
     subAgentActivity,
+    threadUsage,
   } = useChat({
     threadId,
     onThreadTitleUpdate: handleThreadTitleUpdate,
   })
+
+  const sessionPreferred =
+    (session?.user as { preferredModel?: string } | undefined)
+      ?.preferredModel ?? defaultModel
+  const chatModel = sessionPreferred
 
   const showSubPanel = subThreads.length > 0 || isStreaming
 
@@ -85,11 +96,11 @@ export function ChatWindow({ threadId, threadTitle }: ChatWindowProps) {
   }, [messages, streamingContent])
 
   const handleSend = (content: string, fileIds?: string[]) => {
-    sendMessage(content, defaultModel, fileIds)
+    sendMessage(content, chatModel, fileIds)
   }
 
   const handleSuggestedPrompt = (prompt: string) => {
-    sendMessage(prompt, defaultModel)
+    sendMessage(prompt, chatModel)
   }
 
   const isEmpty = messages.length === 0 && !isStreaming
@@ -97,11 +108,18 @@ export function ChatWindow({ threadId, threadTitle }: ChatWindowProps) {
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* Top Bar */}
-      <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3 shrink-0">
-        <h1 className="font-medium text-sm truncate max-w-[200px] sm:max-w-[300px]">
-          {threadTitle || "New Thread"}
-        </h1>
-        <div className="flex items-center gap-2 shrink-0">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-border px-3 py-2 sm:px-4 sm:py-3 shrink-0">
+        <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+          <h1 className="font-medium text-sm truncate max-w-[min(100%,280px)]">
+            {threadTitle || "New Thread"}
+          </h1>
+          <TokenUsageLabel
+            totalTokens={threadUsage.totalTokens}
+            contextLength={threadUsage.contextLength}
+            className="text-[10px] sm:text-xs"
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-2 shrink-0 justify-end">
           {subAgentActivity && (
             <Badge
               variant="secondary"

@@ -6,6 +6,7 @@ import {
 } from "@/lib/queue"
 import { prisma } from "@/lib/prisma"
 import { completeSubAgentChat } from "@/lib/openrouter"
+import { getContextLengthForModel } from "@/lib/modelContext"
 import { subAgentSystemSuffix } from "@/lib/subAgentTools"
 
 const worker = new Worker<SubAgentJobData>(
@@ -16,7 +17,7 @@ const worker = new Worker<SubAgentJobData>(
     const subThread = await prisma.subThread.findUnique({
       where: { id: subThreadId },
       include: {
-        subAgent: { include: { params: true } },
+        subAgent: { include: { params: true, outputParams: true } },
       },
     })
 
@@ -32,27 +33,34 @@ const worker = new Worker<SubAgentJobData>(
     })
 
     const system =
-      agent.instructions + subAgentSystemSuffix(agent.outputFormat)
+      agent.instructions +
+      subAgentSystemSuffix(agent.outputFormat, agent.outputParams)
 
     const userContent = `Input parameters (JSON):\n\n${JSON.stringify(subThread.input, null, 2)}`
 
     try {
-      const output = await completeSubAgentChat({
+      const result = await completeSubAgentChat({
         model: agent.model,
         system,
         user: userContent,
       })
 
+      const contextLength = await getContextLengthForModel(agent.model)
+
       await prisma.subThread.update({
         where: { id: subThreadId },
         data: {
           status: "COMPLETED",
-          output,
+          output: result.content,
           error: null,
+          promptTokens: result.usage?.promptTokens ?? null,
+          completionTokens: result.usage?.completionTokens ?? null,
+          totalTokens: result.usage?.totalTokens ?? null,
+          contextLength,
         },
       })
 
-      return { output }
+      return { output: result.content }
     } catch (e) {
       const message = e instanceof Error ? e.message : "Sub-agent failed"
       await prisma.subThread.update({

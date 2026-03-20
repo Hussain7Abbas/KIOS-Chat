@@ -4,7 +4,7 @@
 SHELL := /bin/bash
 
 .PHONY: help install setup env docker-up docker-down docker-logs redis-up redis-down redis-logs \
-	db-generate db-migrate db-deploy db-push db-seed db-studio \
+	db-generate db-migrate db-deploy db-migrate-deploy db-reset db-push db-seed db-studio \
 	dev worker build start lint typecheck clean
 
 help:
@@ -24,12 +24,14 @@ help:
 	@echo "    make redis-logs   Tail Redis only"
 	@echo ""
 	@echo "  Database (PostgreSQL must be running; DATABASE_URL in .env)"
-	@echo "    make db-generate  prisma generate"
-	@echo "    make db-migrate   prisma migrate dev (interactive name)"
-	@echo "    make db-deploy    prisma migrate deploy (CI / prod-like)"
-	@echo "    make db-push      prisma db push (dev schema sync, no migration files)"
-	@echo "    make db-seed      prisma db seed"
-	@echo "    make db-studio    open Prisma Studio"
+	@echo "    make db-generate       prisma generate"
+	@echo "    make db-migrate        prisma migrate dev (interactive name)"
+	@echo "    make db-deploy         prisma migrate deploy (CI / prod-like)"
+	@echo "    make db-migrate-deploy same as db-deploy"
+	@echo "    make db-reset          prisma migrate reset (drops DB, reapplies migrations, seed)"
+	@echo "    make db-push           prisma db push (dev schema sync, no migration files)"
+	@echo "    make db-seed           prisma db seed"
+	@echo "    make db-studio         open Prisma Studio"
 	@echo ""
 	@echo "  App"
 	@echo "    make dev          Next.js dev server (terminal 1)"
@@ -58,8 +60,11 @@ db-generate:
 db-migrate:
 	bunx prisma migrate dev
 
-db-deploy:
+db-deploy db-migrate-deploy:
 	bunx prisma migrate deploy
+
+db-reset:
+	bunx prisma migrate reset
 
 db-push:
 	bunx prisma db push

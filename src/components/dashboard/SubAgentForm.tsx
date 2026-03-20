@@ -30,6 +30,13 @@ type ParamRow = {
   required: boolean
 }
 
+type OutputParamRow = {
+  key: string
+  name: string
+  type: "string" | "number" | "boolean"
+  description: string
+}
+
 const defaultModel =
   process.env.NEXT_PUBLIC_OPENROUTER_DEFAULT_MODEL || "openai/gpt-4o-mini"
 
@@ -41,6 +48,22 @@ function emptyParamRow(): ParamRow {
     description: "",
     required: true,
   }
+}
+
+function emptyOutputParamRow(): OutputParamRow {
+  return {
+    key: crypto.randomUUID(),
+    name: "",
+    type: "string",
+    description: "",
+  }
+}
+
+function normalizeParamType(
+  t: string
+): "string" | "number" | "boolean" {
+  if (t === "number" || t === "boolean") return t
+  return "string"
 }
 
 interface SubAgentFormProps {
@@ -64,12 +87,22 @@ export function SubAgentForm({ open, onOpenChange, editing }: SubAgentFormProps)
   const [params, setParams] = useState<ParamRow[]>(() =>
     editing
       ? editing.params.map((p) => ({
-        key: p.id,
-        name: p.name,
-        type: p.type as "string" | "number" | "boolean",
-        description: p.description,
-        required: p.required,
-      }))
+          key: p.id,
+          name: p.name,
+          type: normalizeParamType(p.type),
+          description: p.description,
+          required: p.required,
+        }))
+      : []
+  )
+  const [outputParams, setOutputParams] = useState<OutputParamRow[]>(() =>
+    editing
+      ? (editing.outputParams ?? []).map((p) => ({
+          key: p.id,
+          name: p.name,
+          type: normalizeParamType(p.type),
+          description: p.description,
+        }))
       : []
   )
 
@@ -87,6 +120,20 @@ export function SubAgentForm({ open, onOpenChange, editing }: SubAgentFormProps)
     )
   }
 
+  const addOutputParam = () => {
+    setOutputParams((p) => [...p, emptyOutputParamRow()])
+  }
+
+  const removeOutputParam = (key: string) => {
+    setOutputParams((p) => p.filter((row) => row.key !== key))
+  }
+
+  const updateOutputParam = (key: string, patch: Partial<OutputParamRow>) => {
+    setOutputParams((rows) =>
+      rows.map((r) => (r.key === key ? { ...r, ...patch } : r))
+    )
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const payload = {
@@ -99,6 +146,11 @@ export function SubAgentForm({ open, onOpenChange, editing }: SubAgentFormProps)
         type: r.type,
         description: r.description.trim(),
         required: r.required,
+      })),
+      outputParams: outputParams.map((r) => ({
+        name: r.name.trim(),
+        type: r.type,
+        description: r.description.trim(),
       })),
     }
 
@@ -122,6 +174,7 @@ export function SubAgentForm({ open, onOpenChange, editing }: SubAgentFormProps)
       }
       onOpenChange(false)
     } catch (err) {
+      console.error("[SubAgentForm] save failed", err)
       toast.error(err instanceof Error ? err.message : "Request failed")
     }
   }
@@ -169,28 +222,17 @@ export function SubAgentForm({ open, onOpenChange, editing }: SubAgentFormProps)
 
             <div className="grid gap-2">
               <Label>Model</Label>
-              <ModelSelector value={model} onChange={setModel} />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="subagent-format">Output format</Label>
-              <select
-                id="subagent-format"
-                className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
-                value={outputFormat}
-                onChange={(e) =>
-                  setOutputFormat(e.target.value as typeof outputFormat)
-                }
-              >
-                <option value="text">Plain text</option>
-                <option value="markdown">Markdown</option>
-                <option value="json">JSON</option>
-              </select>
+              <ModelSelector
+                value={model}
+                onChange={setModel}
+                inModal
+                className="w-full max-w-[min(100%,280px)]"
+              />
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>Parameters (Input)</Label>
+                <Label>Input parameters (tool arguments)</Label>
                 <Button
                   type="button"
                   variant="outline"
@@ -198,12 +240,12 @@ export function SubAgentForm({ open, onOpenChange, editing }: SubAgentFormProps)
                   onClick={addParam}
                 >
                   <Plus className="h-4 w-4 mr-1" />
-                  Add param
+                  Add input
                 </Button>
               </div>
               {params.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  No parameters — the tool accepts an empty object.
+                  No input parameters — the tool accepts an empty object.
                 </p>
               ) : (
                 <div className="space-y-3 rounded-lg border border-border p-3">
@@ -245,7 +287,7 @@ export function SubAgentForm({ open, onOpenChange, editing }: SubAgentFormProps)
                           size="icon"
                           className="shrink-0"
                           onClick={() => removeParam(row.key)}
-                          aria-label="Remove parameter"
+                          aria-label="Remove input parameter"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -275,6 +317,116 @@ export function SubAgentForm({ open, onOpenChange, editing }: SubAgentFormProps)
                         />
                         Required
                       </label>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="subagent-response-format">Response format</Label>
+              <p className="text-xs text-muted-foreground -mt-1">
+                How the sub-agent should format its reply (plain text, Markdown,
+                or JSON).
+              </p>
+              <select
+                id="subagent-response-format"
+                className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+                value={outputFormat}
+                onChange={(e) =>
+                  setOutputFormat(e.target.value as typeof outputFormat)
+                }
+              >
+                <option value="text">Plain text</option>
+                <option value="markdown">Markdown</option>
+                <option value="json">JSON</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <Label>Output fields (expected response shape)</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Optional. Describe fields the sub-agent should include in its
+                    output (added to the system prompt).
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={addOutputParam}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add output
+                </Button>
+              </div>
+              {outputParams.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No structured output fields — only the response format above
+                  applies.
+                </p>
+              ) : (
+                <div className="space-y-3 rounded-lg border border-border p-3">
+                  {outputParams.map((row) => (
+                    <div
+                      key={row.key}
+                      className="grid gap-2 border-b border-border pb-3 last:border-0 last:pb-0"
+                    >
+                      <div className="flex gap-2 items-end">
+                        <div className="flex-1 grid gap-1">
+                          <Label className="text-xs">Field name</Label>
+                          <Input
+                            value={row.name}
+                            onChange={(e) =>
+                              updateOutputParam(row.key, {
+                                name: e.target.value,
+                              })
+                            }
+                            placeholder="summary"
+                          />
+                        </div>
+                        <div className="w-28 grid gap-1">
+                          <Label className="text-xs">Type</Label>
+                          <select
+                            className="h-8 w-full rounded-lg border border-input bg-transparent px-2 text-sm"
+                            value={row.type}
+                            onChange={(e) =>
+                              updateOutputParam(row.key, {
+                                type: e.target.value as OutputParamRow["type"],
+                              })
+                            }
+                          >
+                            <option value="string">string</option>
+                            <option value="number">number</option>
+                            <option value="boolean">boolean</option>
+                          </select>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="shrink-0"
+                          onClick={() => removeOutputParam(row.key)}
+                          aria-label="Remove output field"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="grid gap-1">
+                        <Label className="text-xs">Description</Label>
+                        <Input
+                          value={row.description}
+                          onChange={(e) =>
+                            updateOutputParam(row.key, {
+                              description: e.target.value,
+                            })
+                          }
+                          placeholder="One-line summary of the result"
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>

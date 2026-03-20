@@ -1,13 +1,22 @@
-import type { SubAgent, SubAgentParam } from "@prisma/client"
+import type {
+  SubAgent,
+  SubAgentParam,
+  SubAgentOutputParam,
+} from "@prisma/client"
 import type { ChatCompletionTool } from "openai/resources/chat/completions"
 
-export type SubAgentWithParams = SubAgent & { params: SubAgentParam[] }
+export type SubAgentWithParams = SubAgent & {
+  params: SubAgentParam[]
+  outputParams: SubAgentOutputParam[]
+}
 
 function jsonSchemaType(
   t: string
 ): "string" | "number" | "boolean" {
-  if (t === "number") return "number"
-  if (t === "boolean") return "boolean"
+  const normalized = t.trim().toLowerCase()
+  if (normalized === "number") return "number"
+  if (normalized === "boolean") return "boolean"
+  // API / DB must send string | number | boolean; default avoids "type missing" in tool schema
   return "string"
 }
 
@@ -45,13 +54,31 @@ export function subAgentsByName(
   return new Map(agents.map((a) => [a.name, a]))
 }
 
-export function subAgentSystemSuffix(outputFormat: string): string {
+function outputFieldsHint(outputParams: SubAgentOutputParam[]): string {
+  if (outputParams.length === 0) return ""
+  const lines = outputParams
+    .map((p) => `- **${p.name}** (${p.type}): ${p.description}`)
+    .join("\n")
+  return `\n\n[Expected output shape]\nYour response should clearly provide or map to these fields:\n${lines}`
+}
+
+export function subAgentSystemSuffix(
+  outputFormat: string,
+  outputParams: SubAgentOutputParam[] = []
+): string {
+  let formatHint: string
   switch (outputFormat) {
     case "json":
-      return "\n\n[Output]\nRespond with valid JSON only. Do not wrap in markdown code fences."
+      formatHint =
+        "\n\n[Output format]\nRespond with valid JSON only. Do not wrap in markdown code fences."
+      break
     case "markdown":
-      return "\n\n[Output]\nFormat your entire response as Markdown."
+      formatHint =
+        "\n\n[Output format]\nFormat your entire response as Markdown."
+      break
     default:
-      return "\n\n[Output]\nRespond in plain text unless the user asks otherwise."
+      formatHint =
+        "\n\n[Output format]\nRespond in plain text unless the user asks otherwise."
   }
+  return formatHint + outputFieldsHint(outputParams)
 }

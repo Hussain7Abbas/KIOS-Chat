@@ -64,6 +64,17 @@ export const subAgentParamSchema = z.object({
   required: z.boolean(),
 })
 
+/** Describes expected output fields (documentation for the sub-agent prompt). */
+export const subAgentOutputParamSchema = z.object({
+  name: z
+    .string()
+    .min(1)
+    .max(64)
+    .regex(subAgentToolNameRegex, "Invalid output field name"),
+  type: z.enum(["string", "number", "boolean"]),
+  description: z.string().min(1).max(2000),
+})
+
 export const createSubAgentSchema = z.object({
   name: z
     .string()
@@ -74,6 +85,7 @@ export const createSubAgentSchema = z.object({
   model: z.string().min(1),
   outputFormat: z.enum(["text", "json", "markdown"]),
   params: z.array(subAgentParamSchema).default([]),
+  outputParams: z.array(subAgentOutputParamSchema).default([]),
 })
 
 export const updateSubAgentSchema = z.object({
@@ -82,6 +94,7 @@ export const updateSubAgentSchema = z.object({
   model: z.string().min(1).optional(),
   outputFormat: z.enum(["text", "json", "markdown"]).optional(),
   params: z.array(subAgentParamSchema).optional(),
+  outputParams: z.array(subAgentOutputParamSchema).optional(),
 })
 
 export type CreateSubAgentInput = z.infer<typeof createSubAgentSchema>

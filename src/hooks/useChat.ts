@@ -38,6 +38,15 @@ interface SubthreadSsePayload {
   input?: Record<string, unknown>
   output?: string
   error?: string
+  promptTokens?: number | null
+  completionTokens?: number | null
+  totalTokens?: number | null
+  contextLength?: number | null
+}
+
+export interface ThreadUsageState {
+  totalTokens: number | null
+  contextLength: number | null
 }
 
 function mergeSubthreadFromEvent(
@@ -67,6 +76,16 @@ function mergeSubthreadFromEvent(
     input: ev.input !== undefined ? ev.input : base.input,
     output: ev.output !== undefined ? ev.output : base.output,
     error: ev.error !== undefined ? ev.error : base.error,
+    promptTokens:
+      ev.promptTokens !== undefined ? ev.promptTokens : base.promptTokens,
+    completionTokens:
+      ev.completionTokens !== undefined
+        ? ev.completionTokens
+        : base.completionTokens,
+    totalTokens:
+      ev.totalTokens !== undefined ? ev.totalTokens : base.totalTokens,
+    contextLength:
+      ev.contextLength !== undefined ? ev.contextLength : base.contextLength,
   }
 }
 
@@ -79,6 +98,10 @@ export function useChat({ threadId, onThreadTitleUpdate }: UseChatOptions) {
   const [subAgentActivity, setSubAgentActivity] = useState<{
     name: string
   } | null>(null)
+  const [threadUsage, setThreadUsage] = useState<ThreadUsageState>({
+    totalTokens: null,
+    contextLength: null,
+  })
   const abortControllerRef = useRef<AbortController | null>(null)
 
   const loadSubThreads = useCallback(async () => {
@@ -93,6 +116,10 @@ export function useChat({ threadId, onThreadTitleUpdate }: UseChatOptions) {
         status: SubThreadListItem["status"]
         error: string | null
         createdAt: string
+        promptTokens: number | null
+        completionTokens: number | null
+        totalTokens: number | null
+        contextLength: number | null
         subAgent: { name: string }
       }>
       setSubThreads(
@@ -103,6 +130,10 @@ export function useChat({ threadId, onThreadTitleUpdate }: UseChatOptions) {
           input: asRecord(s.input),
           output: s.output,
           error: s.error,
+          promptTokens: s.promptTokens,
+          completionTokens: s.completionTokens,
+          totalTokens: s.totalTokens,
+          contextLength: s.contextLength,
           createdAt:
             typeof s.createdAt === "string"
               ? s.createdAt
@@ -118,8 +149,18 @@ export function useChat({ threadId, onThreadTitleUpdate }: UseChatOptions) {
     try {
       const res = await fetch(`/api/threads/${threadId}`)
       if (!res.ok) return
-      const data = await res.json()
+      const data = await res.json() as {
+        messages?: ChatMessage[]
+        lastTotalTokens?: number | null
+        contextLength?: number | null
+      }
       setMessages(data.messages ?? [])
+      setThreadUsage({
+        totalTokens:
+          data.lastTotalTokens != null ? data.lastTotalTokens : null,
+        contextLength:
+          data.contextLength != null ? data.contextLength : null,
+      })
     } catch {
       // silently fail
     }
@@ -128,6 +169,7 @@ export function useChat({ threadId, onThreadTitleUpdate }: UseChatOptions) {
 
   useEffect(() => {
     setSubAgentActivity(null)
+    setThreadUsage({ totalTokens: null, contextLength: null })
   }, [threadId])
 
   const sendMessage = useCallback(
@@ -193,6 +235,22 @@ export function useChat({ threadId, onThreadTitleUpdate }: UseChatOptions) {
 
               if (typeof parsed.threadTitle === "string" && onThreadTitleUpdate) {
                 onThreadTitleUpdate(parsed.threadTitle)
+              }
+
+              if (
+                parsed.usage &&
+                typeof parsed.usage === "object" &&
+                parsed.usage !== null
+              ) {
+                const u = parsed.usage as Record<string, unknown>
+                setThreadUsage({
+                  totalTokens:
+                    typeof u.totalTokens === "number" ? u.totalTokens : null,
+                  contextLength:
+                    typeof u.contextLength === "number"
+                      ? u.contextLength
+                      : null,
+                })
               }
 
               if (typeof parsed.threadStatus === "string") {
@@ -305,5 +363,6 @@ export function useChat({ threadId, onThreadTitleUpdate }: UseChatOptions) {
     subThreads,
     loadSubThreads,
     subAgentActivity,
+    threadUsage,
   }
 }

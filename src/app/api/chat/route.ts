@@ -24,6 +24,12 @@ import {
   getSubAgentQueue,
   getSubAgentQueueEvents,
 } from "@/lib/queue"
+import { getContextLengthForModel } from "@/lib/modelContext"
+import {
+  addUsage,
+  emptyUsage,
+  usageFromOpenAiApi,
+} from "@/lib/tokenUsage"
 
 const MAX_TOOL_ROUNDS = 8
 const SUB_AGENT_JOB_TIMEOUT_MS = 180_000
@@ -135,7 +141,7 @@ export async function POST(request: NextRequest) {
         select: { agentPrompt: true },
       }),
       prisma.subAgent.findMany({
-        include: { params: true },
+        include: { params: true, outputParams: true },
         orderBy: { name: "asc" },
       }),
     ])
@@ -162,6 +168,9 @@ export async function POST(request: NextRequest) {
         const queue = getSubAgentQueue()
         const queueEvents = getSubAgentQueueEvents()
         await queueEvents.waitUntilReady()
+
+        const contextLength = await getContextLengthForModel(model)
+        let usageAcc = emptyUsage()
 
         try {
           await prisma.thread.update({
@@ -198,6 +207,10 @@ export async function POST(request: NextRequest) {
             >()
 
             for await (const chunk of completion) {
+              if (chunk.usage) {
+                const u = usageFromOpenAiApi(chunk.usage)
+                if (u) usageAcc = addUsage(usageAcc, u)
+              }
               const choice = chunk.choices[0]
               if (!choice) continue
               if (choice.finish_reason) {
@@ -362,6 +375,10 @@ export async function POST(request: NextRequest) {
                           status: "completed",
                           output: updated.output,
                           input: inputArgs,
+                          promptTokens: updated.promptTokens,
+                          completionTokens: updated.completionTokens,
+                          totalTokens: updated.totalTokens,
+                          contextLength: updated.contextLength,
                         },
                       })}\n\n`
                     )
@@ -382,6 +399,10 @@ export async function POST(request: NextRequest) {
                           status: "failed",
                           error: err,
                           input: inputArgs,
+                          promptTokens: updated?.promptTokens,
+                          completionTokens: updated?.completionTokens,
+                          totalTokens: updated?.totalTokens,
+                          contextLength: updated?.contextLength,
                         },
                       })}\n\n`
                     )
@@ -418,13 +439,42 @@ export async function POST(request: NextRequest) {
             },
           })
 
+          const hasUsage =
+            usageAcc.promptTokens > 0 ||
+            usageAcc.completionTokens > 0 ||
+            usageAcc.totalTokens > 0
+
           await prisma.thread.update({
             where: { id: threadId },
-            data: { status: "IDLE", updatedAt: new Date() },
+            data: {
+              status: "IDLE",
+              updatedAt: new Date(),
+              ...(contextLength != null ? { contextLength } : {}),
+              ...(hasUsage
+                ? {
+                    lastPromptTokens: usageAcc.promptTokens,
+                    lastCompletionTokens: usageAcc.completionTokens,
+                    lastTotalTokens: usageAcc.totalTokens,
+                  }
+                : {}),
+            },
           })
           controller.enqueue(
             encoder.encode(
               `data: ${JSON.stringify({ threadStatus: "IDLE" })}\n\n`
+            )
+          )
+
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({
+                usage: {
+                  promptTokens: usageAcc.promptTokens,
+                  completionTokens: usageAcc.completionTokens,
+                  totalTokens: usageAcc.totalTokens,
+                  contextLength,
+                },
+              })}\n\n`
             )
           )
 

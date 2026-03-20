@@ -34,22 +34,44 @@ export const POPULAR_MODELS = [
 interface ModelSelectorProps {
   value: string
   onChange: (model: string) => void
+  /** Use inside a dialog so the model list appears above the modal */
+  inModal?: boolean
+  className?: string
 }
 
-export function ModelSelector({ value, onChange }: ModelSelectorProps) {
+export function ModelSelector({
+  value,
+  onChange,
+  inModal = false,
+  className,
+}: ModelSelectorProps) {
   const [open, setOpen] = useState(false)
 
   const selectedModel = POPULAR_MODELS.find((m) => m.id === value)
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger render={<Button variant="outline" role="combobox" aria-expanded={open} className="w-[200px] justify-between text-sm" />}>
+      <PopoverTrigger
+        render={
+          <Button
+            type="button"
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className={cn("w-[200px] justify-between text-sm", className)}
+          />
+        }
+      >
           <span className="truncate">
             {selectedModel?.name ?? value.split("/").pop() ?? "Select model"}
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
       </PopoverTrigger>
-      <PopoverContent className="w-[250px] p-0" align="start">
+      <PopoverContent
+        className="w-[250px] p-0"
+        align="start"
+        inModal={inModal}
+      >
         <Command>
           <CommandInput placeholder="Search models..." />
           <CommandList>

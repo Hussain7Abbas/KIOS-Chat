@@ -1,22 +1,59 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useState, useTransition, useEffect, useCallback } from "react"
 import { saveAgentPromptAction } from "@/app/actions/agent.actions"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { ModelSelector } from "@/components/chat/ModelSelector"
+import { useSession } from "@/lib/auth-client"
 import { Loader2, Save, Bot, User } from "lucide-react"
 import { toast } from "sonner"
 
 interface AgentPromptEditorProps {
   initialPrompt: string | null
+  initialPreferredModel: string
 }
 
-export function AgentPromptEditor({ initialPrompt }: AgentPromptEditorProps) {
+export function AgentPromptEditor({
+  initialPrompt,
+  initialPreferredModel,
+}: AgentPromptEditorProps) {
   const [prompt, setPrompt] = useState(initialPrompt ?? "")
+  const [preferredModel, setPreferredModel] = useState(initialPreferredModel)
   const [isPending, startTransition] = useTransition()
+  const { refetch: refetchSession } = useSession()
   const maxLength = 5000
+
+  useEffect(() => {
+    setPreferredModel(initialPreferredModel)
+  }, [initialPreferredModel])
+
+  const persistPreferredModel = useCallback(
+    async (model: string) => {
+      setPreferredModel(model)
+      try {
+        const res = await fetch("/api/user/preferences", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ preferredModel: model }),
+        })
+        if (!res.ok) {
+          const err = (await res.json().catch(() => null)) as {
+            error?: string
+          } | null
+          toast.error(err?.error ?? "Could not save model preference")
+          return
+        }
+        await refetchSession()
+      } catch {
+        toast.error("Could not save model preference")
+      }
+    },
+    [refetchSession]
+  )
 
   const handleSave = () => {
     startTransition(async () => {
@@ -40,6 +77,18 @@ export function AgentPromptEditor({ initialPrompt }: AgentPromptEditorProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="grid gap-2">
+            <Label>Main chat model</Label>
+            <p className="text-xs text-muted-foreground">
+              OpenRouter model used for the main agent in every thread. Change
+              it here instead of in the chat view.
+            </p>
+            <ModelSelector
+              value={preferredModel}
+              onChange={persistPreferredModel}
+              className="w-full max-w-[min(100%,280px)]"
+            />
+          </div>
           <Textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}

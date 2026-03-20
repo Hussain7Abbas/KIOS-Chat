@@ -38,6 +38,10 @@ export interface ThreadData {
   updatedAt: Date | string
   isArchived: boolean
   status?: ThreadRuntimeStatus
+  lastPromptTokens?: number | null
+  lastCompletionTokens?: number | null
+  lastTotalTokens?: number | null
+  contextLength?: number | null
   messages?: ChatMessage[]
 }
 
@@ -55,6 +59,10 @@ export interface SubThreadListItem {
   output: string | null
   error: string | null
   createdAt: string
+  promptTokens?: number | null
+  completionTokens?: number | null
+  totalTokens?: number | null
+  contextLength?: number | null
 }
 
 export interface FileAttachment {

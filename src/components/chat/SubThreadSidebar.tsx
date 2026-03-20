@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import type { SubThreadListItem, SubThreadListStatus } from "@/types"
 import { ChevronDown, ChevronRight, PanelRightClose, PanelRight } from "lucide-react"
 import ReactMarkdown from "react-markdown"
+import { TokenUsageLabel } from "@/components/chat/TokenUsageLabel"
 
 function statusVariant(
   s: SubThreadListStatus
@@ -108,6 +109,12 @@ export function SubThreadSidebar({
                           {item.status.toLowerCase()}
                         </Badge>
                       </div>
+                      <TokenUsageLabel
+                        totalTokens={item.totalTokens}
+                        contextLength={item.contextLength}
+                        className="text-[10px] block"
+                        prefix="Tok"
+                      />
                       {!isExpanded && (
                         <p className="text-xs text-muted-foreground line-clamp-2">
                           {truncate(previewOut || inputStr, 120)}
@@ -117,6 +124,11 @@ export function SubThreadSidebar({
                   </button>
                   {isExpanded && (
                     <div className="border-t border-border px-2 pb-2 pt-1 space-y-2 text-xs">
+                      <TokenUsageLabel
+                        totalTokens={item.totalTokens}
+                        contextLength={item.contextLength}
+                        className="text-[10px]"
+                      />
                       <div>
                         <p className="font-medium text-muted-foreground mb-1">
                           Input

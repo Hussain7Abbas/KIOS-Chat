@@ -94,6 +94,7 @@ export interface StreamChatRoundParams {
 type OpenRouterStreamingBody =
   OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming & {
     plugins?: OpenRouterFileParserPlugin[]
+    stream_options?: { include_usage?: boolean }
   }
 
 export async function streamChatRound(params: StreamChatRoundParams) {
@@ -105,6 +106,7 @@ export async function streamChatRound(params: StreamChatRoundParams) {
     model: params.model,
     messages: [...systemMessages, ...params.messages],
     stream: true,
+    stream_options: { include_usage: true },
   }
 
   if (params.tools && params.tools.length > 0) {
@@ -119,11 +121,20 @@ export async function streamChatRound(params: StreamChatRoundParams) {
   return openRouterClient.chat.completions.create(body)
 }
 
+export interface SubAgentCompletionResult {
+  content: string
+  usage: {
+    promptTokens: number
+    completionTokens: number
+    totalTokens: number
+  } | null
+}
+
 export async function completeSubAgentChat(params: {
   model: string
   system: string
   user: string
-}): Promise<string> {
+}): Promise<SubAgentCompletionResult> {
   const response = await openRouterClient.chat.completions.create({
     model: params.model,
     messages: [
@@ -132,7 +143,19 @@ export async function completeSubAgentChat(params: {
     ],
   })
 
-  return response.choices[0]?.message?.content?.trim() ?? ""
+  const content = response.choices[0]?.message?.content?.trim() ?? ""
+  const u = response.usage
+  return {
+    content,
+    usage:
+      u != null
+        ? {
+            promptTokens: u.prompt_tokens ?? 0,
+            completionTokens: u.completion_tokens ?? 0,
+            totalTokens: u.total_tokens ?? 0,
+          }
+        : null,
+  }
 }
 
 export async function generateThreadTitle(firstMessage: string): Promise<string> {

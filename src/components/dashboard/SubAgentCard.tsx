@@ -33,6 +33,14 @@ export function SubAgentCard({
           <CardDescription className="line-clamp-2 mt-1">
             {agent.instructions.slice(0, 120)}
             {agent.instructions.length > 120 ? "…" : ""}
+            {agent.params.length > 0 && (
+              <span className="mt-1 block text-[11px] text-muted-foreground font-mono line-clamp-2">
+                In:{" "}
+                {agent.params
+                  .map((p) => `${p.name}:${p.type || "string"}`)
+                  .join(", ")}
+              </span>
+            )}
           </CardDescription>
         </div>
         <div className="flex shrink-0 gap-1">
@@ -62,7 +70,10 @@ export function SubAgentCard({
       <CardContent className="flex flex-wrap gap-2 pt-0">
         <Badge variant="secondary">{agent.model}</Badge>
         <Badge variant="outline">{agent.outputFormat}</Badge>
-        <Badge variant="outline">{agent.params.length} params</Badge>
+        <Badge variant="outline">{agent.params.length} in</Badge>
+        <Badge variant="outline">
+          {(agent.outputParams ?? []).length} out
+        </Badge>
       </CardContent>
     </Card>
   )
