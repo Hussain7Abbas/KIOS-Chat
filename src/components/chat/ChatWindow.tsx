@@ -8,12 +8,15 @@ import { ChatInput } from "./ChatInput"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Badge } from "@/components/ui/badge"
+import { SubThreadSidebar } from "@/components/chat/SubThreadSidebar"
 import { useQueryClient } from "@tanstack/react-query"
 import {
   Sparkles,
   Code,
   BookOpen,
   Lightbulb,
+  Layers,
 } from "lucide-react"
 import type { ChatMessage } from "@/types"
 
@@ -54,17 +57,22 @@ export function ChatWindow({ threadId, threadTitle }: ChatWindowProps) {
     queryClient.invalidateQueries({ queryKey: ["threads"] })
   }, [queryClient])
 
+  const [subSidebarOpen, setSubSidebarOpen] = useState(true)
+
   const {
     messages,
-    setMessages,
     isStreaming,
     streamingContent,
     sendMessage,
     loadMessages,
+    subThreads,
+    subAgentActivity,
   } = useChat({
     threadId,
     onThreadTitleUpdate: handleThreadTitleUpdate,
   })
+
+  const showSubPanel = subThreads.length > 0 || isStreaming
 
   // Load messages when thread changes
   useEffect(() => {
@@ -87,18 +95,43 @@ export function ChatWindow({ threadId, threadTitle }: ChatWindowProps) {
   const isEmpty = messages.length === 0 && !isStreaming
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       {/* Top Bar */}
-      <div className="flex items-center justify-between border-b border-border px-4 py-3">
-        <h1 className="font-medium text-sm truncate max-w-[300px]">
+      <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3 shrink-0">
+        <h1 className="font-medium text-sm truncate max-w-[200px] sm:max-w-[300px]">
           {threadTitle || "New Thread"}
         </h1>
+        <div className="flex items-center gap-2 shrink-0">
+          {subAgentActivity && (
+            <Badge
+              variant="secondary"
+              className="text-xs font-normal max-w-[140px] truncate animate-pulse"
+              title={`Calling sub-agent ${subAgentActivity.name}`}
+            >
+              {subAgentActivity.name}…
+            </Badge>
+          )}
+          {showSubPanel && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1 hidden lg:inline-flex"
+              onClick={() => setSubSidebarOpen((o) => !o)}
+            >
+              <Layers className="h-3.5 w-3.5" />
+              Sub-threads
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* Messages Area */}
-      <ScrollArea className="flex-1">
-        <div className="max-w-3xl mx-auto">
-          {isEmpty ? (
+      <div className="flex flex-1 min-h-0 flex-row">
+        <div className="flex min-w-0 flex-1 flex-col min-h-0">
+          {/* Messages Area */}
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="max-w-3xl mx-auto">
+              {isEmpty ? (
             /* Empty State */
             <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
               <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-6">
@@ -169,6 +202,16 @@ export function ChatWindow({ threadId, threadTitle }: ChatWindowProps) {
         isStreaming={isStreaming}
         onSend={handleSend}
       />
+        </div>
+
+        {showSubPanel && (
+          <SubThreadSidebar
+            open={subSidebarOpen}
+            onOpenChange={setSubSidebarOpen}
+            items={subThreads}
+          />
+        )}
+      </div>
     </div>
   )
 }

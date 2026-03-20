@@ -91,9 +91,23 @@ export function ThreadItem({ thread, isActive, onDelete }: ThreadItemProps) {
     >
       <Link
         href={`/chat/${thread.id}`}
-        className="flex flex-1 items-center gap-2 truncate"
+        className="flex flex-1 items-center gap-2 truncate min-w-0"
       >
         <MessageSquare className="h-4 w-4 shrink-0" />
+        {thread.status === "PROCESSING" && (
+          <span
+            className="h-2 w-2 shrink-0 rounded-full bg-sky-500 animate-pulse"
+            title="Processing"
+            aria-hidden
+          />
+        )}
+        {thread.status === "WAITING" && (
+          <span
+            className="h-2 w-2 shrink-0 rounded-full bg-amber-500"
+            title="Waiting for sub-agent"
+            aria-hidden
+          />
+        )}
         <span className="truncate">{thread.title}</span>
       </Link>
 

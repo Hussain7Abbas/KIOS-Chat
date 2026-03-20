@@ -17,6 +17,7 @@ const envSchema = z.object({
   GOOGLE_CLIENT_SECRET: z.string().min(1),
   FACEBOOK_CLIENT_ID: z.string().min(1),
   FACEBOOK_CLIENT_SECRET: z.string().min(1),
+  REDIS_URL: z.string().min(1, "REDIS_URL is required for sub-agent jobs"),
 })
 
 export type Env = z.infer<typeof envSchema>

@@ -18,7 +18,7 @@ import {
 import { ChevronsUpDown, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-const POPULAR_MODELS = [
+export const POPULAR_MODELS = [
   { id: "openai/gpt-4o", name: "GPT-4o" },
   { id: "openai/gpt-4o-mini", name: "GPT-4o Mini" },
   { id: "anthropic/claude-sonnet-4", name: "Claude Sonnet 4" },

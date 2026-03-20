@@ -2,9 +2,10 @@ import OpenAI from "openai"
 import type {
   ChatCompletionContentPart,
   ChatCompletionMessageParam,
+  ChatCompletionTool,
 } from "openai/resources/chat/completions"
 
-const client = new OpenAI({
+export const openRouterClient = new OpenAI({
   apiKey: process.env.OPENROUTER_API_KEY!,
   baseURL: "https://openrouter.ai/api/v1",
   defaultHeaders: {
@@ -77,13 +78,65 @@ export async function streamChat(params: StreamChatParams) {
       : {}),
   }
 
-  return client.chat.completions.create(
+  return openRouterClient.chat.completions.create(
     body as OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming
   )
 }
 
+export interface StreamChatRoundParams {
+  messages: ChatCompletionMessageParam[]
+  model: string
+  agentPrompt?: string
+  openRouterPlugins?: OpenRouterFileParserPlugin[]
+  tools?: ChatCompletionTool[]
+}
+
+type OpenRouterStreamingBody =
+  OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming & {
+    plugins?: OpenRouterFileParserPlugin[]
+  }
+
+export async function streamChatRound(params: StreamChatRoundParams) {
+  const systemMessages = params.agentPrompt
+    ? [{ role: "system" as const, content: params.agentPrompt }]
+    : []
+
+  const body: OpenRouterStreamingBody = {
+    model: params.model,
+    messages: [...systemMessages, ...params.messages],
+    stream: true,
+  }
+
+  if (params.tools && params.tools.length > 0) {
+    body.tools = params.tools
+    body.tool_choice = "auto"
+  }
+
+  if (params.openRouterPlugins && params.openRouterPlugins.length > 0) {
+    body.plugins = params.openRouterPlugins
+  }
+
+  return openRouterClient.chat.completions.create(body)
+}
+
+export async function completeSubAgentChat(params: {
+  model: string
+  system: string
+  user: string
+}): Promise<string> {
+  const response = await openRouterClient.chat.completions.create({
+    model: params.model,
+    messages: [
+      { role: "system", content: params.system },
+      { role: "user", content: params.user },
+    ],
+  })
+
+  return response.choices[0]?.message?.content?.trim() ?? ""
+}
+
 export async function generateThreadTitle(firstMessage: string): Promise<string> {
-  const response = await client.chat.completions.create({
+  const response = await openRouterClient.chat.completions.create({
     model: process.env.NEXT_PUBLIC_OPENROUTER_DEFAULT_MODEL || "openai/gpt-4o-mini",
     messages: [
       {

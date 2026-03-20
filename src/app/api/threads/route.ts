@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
           updatedAt: true,
           isArchived: true,
           userId: true,
+          status: true,
         },
       }),
       prisma.user.findUnique({

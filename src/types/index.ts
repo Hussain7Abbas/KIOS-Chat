@@ -28,6 +28,8 @@ export interface ChatMessage {
   createdAt: Date | string
 }
 
+export type ThreadRuntimeStatus = "IDLE" | "PROCESSING" | "WAITING"
+
 export interface ThreadData {
   id: string
   title: string
@@ -35,7 +37,24 @@ export interface ThreadData {
   createdAt: Date | string
   updatedAt: Date | string
   isArchived: boolean
+  status?: ThreadRuntimeStatus
   messages?: ChatMessage[]
+}
+
+export type SubThreadListStatus =
+  | "PENDING"
+  | "PROCESSING"
+  | "COMPLETED"
+  | "FAILED"
+
+export interface SubThreadListItem {
+  id: string
+  subAgentName: string
+  status: SubThreadListStatus
+  input: Record<string, unknown>
+  output: string | null
+  error: string | null
+  createdAt: string
 }
 
 export interface FileAttachment {

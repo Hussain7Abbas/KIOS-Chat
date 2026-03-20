@@ -1,109 +1,205 @@
 # KIOS Chat
 
-A full-stack AI Chat SaaS application built with Next.js 16 (App Router), TypeScript, Prisma ORM, PostgreSQL, Better Auth, and OpenRouter API.
+Full-stack AI chat app: **Next.js 16** (App Router), **TypeScript**, **Prisma**, **PostgreSQL**, **Better Auth**, **OpenRouter**, **Stripe**, and **ImageKit**. Optional **sub-agents** run tool calls through **BullMQ** + **Redis** with a separate worker process.
 
 ## Features
-- **Authentication**: Email/Password, Google, and GitHub OAuth using Better Auth.
-- **AI Chat**: Multi-model streaming chat powered by OpenRouter (GPT-4o, Claude 3.5 Sonnet, Gemini, Llama 3).
-- **File Attachments**: Cloudinary integration for image and document uploads within threads.
-- **Subscriptions**: Stripe integration for one-time thread quota purchases.
-- **Admin Dashboard**: Role-Based Access Control (RBAC) to manage usage, agent system prompts, and view historical purchases.
-- **Dynamic UI**: Built with Tailwind CSS, shadcn/ui, and Framer Motion.
 
-## ASCII Architecture Flow
+- **Authentication**: Email/password, Google, and Facebook OAuth (Better Auth).
+- **AI chat**: Streaming completions via OpenRouter; admin-defined system prompt.
+- **Sub-agents** (optional): Admins configure named tools (instructions, model, typed parameters). The main model can call them; each run is queued, stored as a **sub-thread**, and shown in a toggleable right sidebar.
+- **File attachments**: Uploads via **ImageKit** (e.g. `.txt`; PDF flow documented in-app).
+- **Subscriptions**: Stripe one-time purchases to add thread quota.
+- **Admin dashboard**: Usage, **main agent instructions**, **sub-agent CRUD**, users.
+- **UI**: Tailwind CSS, shadcn-style components, Framer Motion.
+
+## Stack
+
+| Area | Technology |
+|------|------------|
+| Runtime / package manager | [Bun](https://bun.sh) |
+| Framework | Next.js 16, React 19 |
+| Database | PostgreSQL, Prisma (`src/prisma/schema.prisma`) |
+| Auth | Better Auth |
+| LLM | OpenRouter (OpenAI-compatible client) |
+| Files | ImageKit |
+| Payments | Stripe |
+| Sub-agent jobs | BullMQ + Redis (`bun run worker`) |
+
+## Architecture (high level)
 
 ```
-                      +------------------+
-                      |   Client (Web)   |
-                      +---------+--------+
-                                |
-                                v
-                      +------------------+
-                      |  Next.js 16 App  |
-                      |   (App Router)   |
-                      +---------+--------+
-                                |
-          +---------------------+---------------------+
-          |                     |                     |
-          v                     v                     v
-+------------------+  +------------------+  +------------------+
-|   Better Auth    |  |   OpenRouter API |  |   Stripe  API    |
-|   (Auth & DB)    |  |   (AI Streaming) |  |   (Payments)     |
-+------------------+  +------------------+  +------------------+
-          |                                           |
-          |       +-------------------------+         | Webhook
-          +-----> |     PostgreSQL DB       | <-------+
-                  |  (Prisma ORM Managed)   |
-                  +-------------------------+
+                         +------------------+
+                         |   Client (Web)   |
+                         +--------+---------+
+                                  |
+                                  v
+                         +------------------+
+                         |  Next.js App     |
+                         |  API + RSC       |
+                         +--------+---------+
+                                  |
+     +----------------------------+----------------------------+
+     |                            |                            |
+     v                            v                            v
++------------+           +---------------+            +---------------+
+| Better Auth|           | OpenRouter    |            | Stripe API    |
+| + Postgres |           | (streaming)   |            | + webhooks    |
++------------+           +---------------+            +---------------+
+     |                            |
+     |                    +-------+--------+
+     |                    |                |
+     v                    v                v
++------------------+   +---------+   +-------------+
+| PostgreSQL       |   | Redis   |   | ImageKit    |
+| (Prisma)         |   | BullMQ  |   | uploads     |
++------------------+   +----+----+   +-------------+
+                             |
+                             v
+                    +------------------+
+                    | subagent-worker  |
+                    | (OpenRouter)     |
+                    +------------------+
 ```
 
 ## Prerequisites
-- **Node.js**: v18.17+
-- **PostgreSQL**: A running Postgres database instance (e.g., Supabase, Neon).
-- **OpenRouter Account**: For API key access.
-- **Stripe Account**: For payment processing and webhooks.
-- **Cloudinary Account**: For file hosting.
-- **OAuth Credentials**: (Optional) Google and GitHub for social login.
 
-## Step-by-step Setup
+- **Bun** (recommended) — install from [bun.sh](https://bun.sh)
+- **Docker** (optional but recommended) — Postgres + Redis via `docker compose`
+- **PostgreSQL** — local, Docker, or hosted (`DATABASE_URL`)
+- **OpenRouter** API key
+- **Stripe** keys + webhook secret (for purchases)
+- **ImageKit** keys (uploads)
+- **Redis** — required if you use sub-agents (`REDIS_URL` in `.env`)
+- **OAuth** (optional) — Google and/or Facebook app credentials
 
-1. **Clone & Install**
-   ```bash
-   git clone <repo-url>
-   cd KIOS-Chat
-   bun install
-   ```
-
-2. **Environment Configuration**
-   Copy the example environment file:
-   ```bash
-   cp .env.local.example .env.local
-   ```
-   Fill in your actual API keys in `.env.local`.
-
-3. **Database Setup**
-   Ensure Docker is running, then spin up the PostgreSQL database container:
-   ```bash
-   docker-compose up -d
-   ```
-   
-   Next, run Prisma migrations to initialize your schema and seed the database with default accounts:
-   ```bash
-   npx prisma generate
-   npx prisma migrate dev --name init
-   npx prisma db seed
-   ```
-
-   **Default Accounts Created:**
-   - Admin: `root@email.com` / `12345678`
-   - User: `user@email.com` / `12345678`
-
-4. **Run the Development Server**
-   ```bash
-   bun run dev
-   ```
-   Access the app at `http://localhost:3000`.
-
-## Stripe Webhook Local Testing
-
-To test Stripe checkout sessions locally, use the Stripe CLI to forward webhook events to your localhost server:
+## Quick start
 
 ```bash
-# Login to Stripe CLI
-stripe login
+git clone <repo-url>
+cd KIOS-Chat
 
-# Forward webhooks to the local API endpoint
-stripe listen --forward-to localhost:3000/api/webhooks/stripe
+# One-shot: install, copy .env if missing, prisma generate
+make setup
 
-# Note the Webhook Secret provided in the terminal output and paste it into your .env.local:
-# STRIPE_WEBHOOK_SECRET=whsec_...
+# Edit .env — see .env.example (DATABASE_URL, REDIS_*, auth, Stripe, ImageKit, OpenRouter, …)
+
+# Start Postgres + Redis
+make docker-up
+
+# Apply migrations (dev)
+make db-migrate
+
+# Optional: seed default users (see below)
+make db-seed
 ```
 
-## Business Logic & Constraints
+Run the app (two terminals if you use sub-agents):
 
-### Thread Quota System
-By default, new users receive **3 free threads** upon registration. 
-Creating a new thread consumes exactly `1` credit. When a user runs out of threads, the "New Thread" button triggers a "Quota Exhausted" dialog, preventing the creation of new threads. The user can navigate to `/dashboard` to purchase more threads via Stripe. Upon a successful `checkout.session.completed` webhook event securely verified from Stripe, the user's `threadsRemaining` quota is atomically incremented, instantly unlocking the ability to create more threads without session refresh.
+```bash
+# Terminal 1
+make dev
 
-### Agent Prompt Configuration
-Admin users (users with the `admin` role) possess the ability to customize the application's global **System Prompt** inside the `Agent Settings` tab of the Admin Dashboard. This data is saved directly to the database via Next.js Server Actions and securely attached to the *user record*. During chat invocation in `src/app/api/chat/route.ts`, this prompt is fetched dynamically and prepended with the `system` role to the OpenRouter payload. This forces the LLM to strictly adhere to the persona crafted by the Admin.
+# Terminal 2 — only needed when sub-agents are configured and Redis is running
+make worker
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+### Makefile
+
+Run `make help` for all targets. Common ones:
+
+| Target | Purpose |
+|--------|---------|
+| `make setup` | `bun install`, `make env`, `prisma generate` |
+| `make docker-up` / `make docker-down` | Start/stop Postgres + Redis |
+| `make db-migrate` | `prisma migrate dev` |
+| `make db-deploy` | `prisma migrate deploy` |
+| `make db-push` | `prisma db push` (dev schema sync) |
+| `make db-seed` | Seed script |
+| `make db-studio` | Prisma Studio |
+| `make dev` | Next.js dev server |
+| `make worker` | BullMQ sub-agent worker |
+| `make build` / `make start` | Production build / start |
+| `make typecheck` / `make lint` | Quality checks |
+
+Equivalent without Make: `bun install`, `bunx prisma …`, `bun run dev`, `bun run worker`, etc.
+
+## Environment variables
+
+Copy and edit from the example file:
+
+```bash
+cp .env.example .env   # or: make env
+```
+
+Required values are validated at runtime (see `src/lib/env.ts`). At minimum you need database, auth secret/URL, app URL, OpenRouter, Stripe, ImageKit, and OAuth client IDs if you use those providers.
+
+**Sub-agents / queue**
+
+- `REDIS_URL` — e.g. `redis://:password@localhost:6379` (must match `REDIS_PASSWORD` if you use Docker Redis)
+- `REDIS_PASSWORD` — used by `docker-compose.yml` for the Redis container
+
+**Docker Compose**
+
+- `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` — must align with `DATABASE_URL` when using the bundled Postgres service.
+- If port `5432` is already taken, set `POSTGRES_PORT` (e.g. `5433`) and adjust `DATABASE_URL` accordingly.
+
+## Database & seed
+
+Prisma schema: `src/prisma/schema.prisma`.
+
+After migrations, optional seed creates:
+
+| Role | Email | Password |
+|------|--------|----------|
+| Admin | `root@email.com` | `12345678` |
+| User | `user@email.com` | `12345678` |
+
+```bash
+make db-seed
+```
+
+## Sub-agents
+
+1. Ensure **Redis** is running and **`REDIS_URL`** is set.
+2. Run **`make worker`** alongside **`make dev`**.
+3. In **Dashboard → Agent settings**, define sub-agents (tool name, instructions, model, output format, parameters).
+4. During chat, the main model may emit **tool calls**; the API creates **sub-thread** rows, enqueues jobs, waits for the worker, streams **SSE** updates (`subthread`, `threadStatus`), and continues the reply.
+
+Thread statuses: `IDLE`, `PROCESSING`, `WAITING` (while a sub-agent job is in flight).
+
+## Stripe webhooks (local)
+
+```bash
+stripe login
+stripe listen --forward-to localhost:3000/api/webhooks/stripe
+```
+
+Put the printed signing secret into `.env` as `STRIPE_WEBHOOK_SECRET`.
+
+## Business logic (short)
+
+### Thread quota
+
+New users get a starting thread allowance. Creating a thread decrements it. At zero, new threads are blocked until quota is purchased via Stripe; a verified webhook increments `threadsRemaining`.
+
+### Main agent & sub-agents
+
+Admins set the **global system prompt** (main agent). Sub-agents are separate configs exposed to the main model as **function tools**; they do not see the main thread history—only the JSON arguments passed into each invocation.
+
+## Scripts (`package.json`)
+
+| Script | Command |
+|--------|---------|
+| `dev` | `next dev` |
+| `build` | `next build` |
+| `start` | `next start` |
+| `lint` | ESLint |
+| `typecheck` | `tsc --noEmit` |
+| `worker` | BullMQ sub-agent worker |
+
+## Next.js note
+
+This repo targets a **current Next.js 16** toolchain; check `node_modules/next/dist/docs/` for framework-specific APIs if you extend routing or server features.
+
