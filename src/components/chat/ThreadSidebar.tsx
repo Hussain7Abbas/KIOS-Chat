@@ -183,9 +183,6 @@ export function ThreadSidebar({
                   <p className="text-center text-sm text-muted-foreground">
                     No threads yet. Start a conversation!
                   </p>
-                  <Button variant="outline" size="sm" onClick={onOpenBuyThreads}>
-                    Buy Threads
-                  </Button>
                 </div>
               )}
             </div>
@@ -231,9 +228,7 @@ export function ThreadSidebar({
               )}
               {isAdmin && <DropdownMenuSeparator />}
               <DropdownMenuItem
-                onSelect={() => {
-                  queueMicrotask(() => onOpenBuyThreads())
-                }}
+                onClick={() => onOpenBuyThreads()}
               >
                 <ShoppingCart className="mr-2 h-4 w-4" />
                 Buy Threads
