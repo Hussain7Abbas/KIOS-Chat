@@ -1,6 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
+import { markdownProseClassName } from "@/lib/markdownProse"
 import { ResponseMarkdown } from "./ResponseMarkdown"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { FileAttachment } from "./FileAttachment"
@@ -52,7 +53,7 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
           {isUser ? (
             <p className="whitespace-pre-wrap">{message.content}</p>
           ) : (
-            <div className="prose prose-sm dark:prose-invert max-w-none prose-pre:bg-transparent prose-pre:p-0">
+            <div className={markdownProseClassName()}>
               <ResponseMarkdown>{message.content}</ResponseMarkdown>
               {isStreaming && (
                 <span className="inline-block w-2 h-4 bg-foreground/70 animate-pulse ml-0.5" />

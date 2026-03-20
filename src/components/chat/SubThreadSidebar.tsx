@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import type { SubThreadListItem, SubThreadListStatus } from "@/types"
 import { ChevronDown, ChevronRight, PanelRightClose, PanelRight } from "lucide-react"
+import { markdownProseClassName } from "@/lib/markdownProse"
 import { ResponseMarkdown } from "./ResponseMarkdown"
 import { TokenUsageLabel } from "@/components/chat/TokenUsageLabel"
 
@@ -146,7 +147,10 @@ export function SubThreadSidebar({
                         ) : item.output ? (
                           <div
                             className={cn(
-                              "rounded-md bg-muted/50 p-2 prose prose-sm dark:prose-invert max-w-none"
+                              "rounded-md bg-muted/50 p-2",
+                              markdownProseClassName(undefined, {
+                                compact: true,
+                              })
                             )}
                           >
                             <ResponseMarkdown>{item.output}</ResponseMarkdown>
