@@ -4,7 +4,9 @@ import { ThreadSidebar } from "@/components/chat/ThreadSidebar"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { Menu } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+
+const SIDEBAR_COLLAPSED_KEY = "kios-sidebar-collapsed"
 
 export default function ChatLayout({
   children,
@@ -12,12 +14,32 @@ export default function ChatLayout({
   children: React.ReactNode
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
+
+  useEffect(() => {
+    const stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY)
+    if (stored !== null) {
+      setCollapsed(stored === "true")
+    }
+  }, [])
+
+  const toggleCollapsed = () => {
+    setCollapsed((prev) => {
+      const next = !prev
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(next))
+      return next
+    })
+  }
 
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-[260px] shrink-0 border-r border-border">
-        <ThreadSidebar />
+      <aside
+        className={`hidden md:flex shrink-0 border-r border-border transition-[width] duration-200 ${
+          collapsed ? "w-16" : "w-[260px]"
+        }`}
+      >
+        <ThreadSidebar collapsed={collapsed} onCollapseToggle={toggleCollapsed} />
       </aside>
 
       {/* Mobile Sidebar */}
@@ -28,7 +50,7 @@ export default function ChatLayout({
           </SheetTrigger>
         </div>
         <SheetContent side="left" className="w-[260px] p-0">
-          <ThreadSidebar />
+          <ThreadSidebar collapsed={false} onCollapseToggle={() => {}} />
         </SheetContent>
       </Sheet>
 

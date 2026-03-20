@@ -7,23 +7,32 @@ export async function GET(request: NextRequest) {
   if (error) return error
 
   try {
-    const threads = await prisma.thread.findMany({
-      where: {
-        userId: session.user.id,
-        isArchived: false,
-      },
-      orderBy: { updatedAt: "desc" },
-      select: {
-        id: true,
-        title: true,
-        createdAt: true,
-        updatedAt: true,
-        isArchived: true,
-        userId: true,
-      },
-    })
+    const [threads, user] = await Promise.all([
+      prisma.thread.findMany({
+        where: {
+          userId: session.user.id,
+          isArchived: false,
+        },
+        orderBy: { updatedAt: "desc" },
+        select: {
+          id: true,
+          title: true,
+          createdAt: true,
+          updatedAt: true,
+          isArchived: true,
+          userId: true,
+        },
+      }),
+      prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { threadsRemaining: true },
+      }),
+    ])
 
-    return NextResponse.json({ threads })
+    return NextResponse.json({
+      threads,
+      threadsRemaining: user?.threadsRemaining ?? 0,
+    })
   } catch {
     return NextResponse.json(
       { error: "Failed to fetch threads" },

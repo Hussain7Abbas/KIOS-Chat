@@ -3,11 +3,16 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import type { ThreadData } from "@/types"
 
-async function fetchThreads(): Promise<ThreadData[]> {
+interface ThreadsResponse {
+  threads: ThreadData[]
+  threadsRemaining: number
+}
+
+async function fetchThreads(): Promise<ThreadsResponse> {
   const res = await fetch("/api/threads")
   if (!res.ok) throw new Error("Failed to fetch threads")
   const data = await res.json()
-  return data.threads
+  return { threads: data.threads, threadsRemaining: data.threadsRemaining ?? 0 }
 }
 
 async function createThread(): Promise<ThreadData> {

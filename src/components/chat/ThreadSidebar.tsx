@@ -31,20 +31,30 @@ import {
   LayoutDashboard,
   LogOut,
   ChevronUp,
+  ShoppingCart,
+  PanelLeftClose,
+  PanelLeft,
 } from "lucide-react"
 import Link from "next/link"
 
-export function ThreadSidebar() {
+interface ThreadSidebarProps {
+  collapsed?: boolean
+  onCollapseToggle?: () => void
+}
+
+export function ThreadSidebar({ collapsed = false, onCollapseToggle }: ThreadSidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
   const { data: session } = useSession()
-  const { data: threads, isLoading } = useThreads()
+  const { data: threadsData, isLoading } = useThreads()
   const createThread = useCreateThread()
   const deleteThread = useDeleteThread()
   const [showQuotaDialog, setShowQuotaDialog] = useState(false)
+  const [showBuyThreadsModal, setShowBuyThreadsModal] = useState(false)
 
+  const threads = threadsData?.threads ?? []
+  const threadsRemaining = threadsData?.threadsRemaining ?? (session?.user as { threadsRemaining?: number })?.threadsRemaining ?? 0
   const isAdmin = (session?.user as any)?.role === "admin"
-  const threadsRemaining = (session?.user as { threadsRemaining?: number })?.threadsRemaining ?? 0
 
   const handleNewThread = async () => {
     if (threadsRemaining <= 0) {
@@ -82,80 +92,140 @@ export function ThreadSidebar() {
     <>
       <div className="flex h-full w-full flex-col bg-card/50">
         {/* Header */}
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-primary" />
-            <h2 className="font-semibold text-sm">KIOS Chat</h2>
-          </div>
-          <Badge
-            variant={threadsRemaining <= 1 ? "destructive" : "secondary"}
-            className="text-xs"
-          >
-            {threadsRemaining} left
-          </Badge>
+        <div className={`flex items-center ${collapsed ? "justify-center p-2" : "justify-between p-4"}`}>
+          {collapsed ? (
+            <div className="flex flex-col items-center gap-2 w-full">
+              <div className="flex flex-col items-center gap-1">
+                <MessageSquare className="h-5 w-5 text-primary shrink-0" />
+                <Badge
+                  variant={threadsRemaining <= 1 ? "destructive" : "secondary"}
+                  className="text-xs shrink-0"
+                >
+                  {threadsRemaining}
+                </Badge>
+              </div>
+              {onCollapseToggle && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={onCollapseToggle}
+                >
+                  <PanelLeft className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-primary" />
+                <h2 className="font-semibold text-sm">KIOS Chat</h2>
+              </div>
+              <div className="flex items-center gap-1">
+                <Badge
+                  variant={threadsRemaining <= 1 ? "destructive" : "secondary"}
+                  className="text-xs"
+                >
+                  {threadsRemaining} left
+                </Badge>
+                {onCollapseToggle && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={onCollapseToggle}
+                  >
+                    <PanelLeftClose className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
         </div>
 
         {/* New Thread Button */}
-        <div className="px-3 pb-3">
+        <div className={collapsed ? "flex justify-center px-2 pb-2" : "px-3 pb-3"}>
           <Button
             variant="outline"
-            className="w-full justify-start gap-2"
+            className={collapsed ? "h-9 w-9 p-0" : "w-full justify-start gap-2"}
             onClick={handleNewThread}
             disabled={createThread.isPending}
           >
             <Plus className="h-4 w-4" />
-            New Thread
+            {!collapsed && "New Thread"}
           </Button>
         </div>
 
         <Separator />
 
         {/* Thread List */}
-        <ScrollArea className="flex-1 px-2">
-          <div className="space-y-1 py-2">
-            {isLoading ? (
-              <div className="space-y-2 p-2">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-9 rounded-md bg-muted animate-pulse"
+        {!collapsed && (
+          <ScrollArea className="flex-1 px-2">
+            <div className="space-y-1 py-2">
+              {isLoading ? (
+                <div className="space-y-2 p-2">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="h-9 rounded-md bg-muted animate-pulse"
+                    />
+                  ))}
+                </div>
+              ) : threads.length > 0 ? (
+                threads.map((thread) => (
+                  <ThreadItem
+                    key={thread.id}
+                    thread={thread}
+                    isActive={pathname === `/chat/${thread.id}`}
+                    onDelete={() => handleDeleteThread(thread.id)}
                   />
-                ))}
-              </div>
-            ) : threads && threads.length > 0 ? (
-              threads.map((thread) => (
-                <ThreadItem
-                  key={thread.id}
-                  thread={thread}
-                  isActive={pathname === `/chat/${thread.id}`}
-                  onDelete={() => handleDeleteThread(thread.id)}
-                />
-              ))
-            ) : (
-              <p className="px-3 py-6 text-center text-sm text-muted-foreground">
-                No threads yet. Start a conversation!
-              </p>
-            )}
-          </div>
-        </ScrollArea>
+                ))
+              ) : (
+                <div className="flex flex-col items-center gap-4 px-3 py-6">
+                  <p className="text-center text-sm text-muted-foreground">
+                    No threads yet. Start a conversation!
+                  </p>
+                  <BuyThreadsModal
+                    trigger={
+                      <Button variant="outline" size="sm">
+                        Buy Threads
+                      </Button>
+                    }
+                  />
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        )}
 
         <Separator />
 
         {/* User Footer */}
-        <div className="p-3">
+        <div className={collapsed ? "p-2 flex justify-center" : "p-3"}>
           <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="ghost" className="w-full justify-start gap-2 px-2" />}>
-                <Avatar className="h-7 w-7">
-                  <AvatarImage src={session?.user?.image ?? undefined} />
-                  <AvatarFallback className="text-xs">
-                    {userInitials}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="flex-1 truncate text-left text-sm">
-                  {session?.user?.name}
-                </span>
-                <ChevronUp className="h-4 w-4 text-muted-foreground" />
-            </DropdownMenuTrigger>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  className={collapsed ? "h-9 w-9 p-0" : "w-full justify-start gap-2 px-2"}
+                >
+                  <Avatar className={collapsed ? "h-8 w-8" : "h-7 w-7"}>
+                    <AvatarImage src={session?.user?.image ?? undefined} />
+                    <AvatarFallback className="text-xs">
+                      {userInitials}
+                    </AvatarFallback>
+                  </Avatar>
+                  {!collapsed && (
+                    <>
+                      <span className="flex-1 truncate text-left text-sm">
+                        {session?.user?.name}
+                      </span>
+                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                    </>
+                  )}
+                </Button>
+              }
+            />
             <DropdownMenuContent align="start" className="w-56">
               {isAdmin && (
                 <DropdownMenuItem render={<Link href="/dashboard" />}>
@@ -166,6 +236,11 @@ export function ThreadSidebar() {
                 </DropdownMenuItem>
               )}
               {isAdmin && <DropdownMenuSeparator />}
+              <DropdownMenuItem onSelect={() => setShowBuyThreadsModal(true)}>
+                <ShoppingCart className="mr-2 h-4 w-4" />
+                Buy Threads
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => signOut({ fetchOptions: { onSuccess: () => router.push("/") } })}
                 className="text-destructive focus:text-destructive"
@@ -177,6 +252,12 @@ export function ThreadSidebar() {
           </DropdownMenu>
         </div>
       </div>
+
+      {/* Buy Threads Modal (controlled from dropdown) */}
+      <BuyThreadsModal
+        open={showBuyThreadsModal}
+        onOpenChange={setShowBuyThreadsModal}
+      />
 
       {/* Quota Dialog */}
       <Dialog open={showQuotaDialog} onOpenChange={setShowQuotaDialog}>

@@ -22,11 +22,16 @@ const PACKAGES = [
 
 interface BuyThreadsModalProps {
   trigger?: React.ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
-export function BuyThreadsModal({ trigger }: BuyThreadsModalProps) {
+export function BuyThreadsModal({ trigger, open: controlledOpen, onOpenChange }: BuyThreadsModalProps) {
   const [isPending, setIsPending] = useState(false)
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
+  const isControlled = controlledOpen !== undefined
+  const open = isControlled ? controlledOpen : internalOpen
+  const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setInternalOpen
 
   const handlePurchase = async (packageIndex: number) => {
     setIsPending(true)
@@ -52,14 +57,16 @@ export function BuyThreadsModal({ trigger }: BuyThreadsModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={trigger ? (trigger as React.ReactElement) : <Button />}>
-        {!trigger && (
-          <>
-            <ShoppingCart className="mr-2 h-4 w-4" />
-            Buy More Threads
-          </>
-        )}
-      </DialogTrigger>
+      {!isControlled && (
+        <DialogTrigger render={trigger ? (trigger as React.ReactElement) : <Button />}>
+          {!trigger && (
+            <>
+              <ShoppingCart className="mr-2 h-4 w-4" />
+              Buy More Threads
+            </>
+          )}
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Purchase Thread Packages</DialogTitle>
