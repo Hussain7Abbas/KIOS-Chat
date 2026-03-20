@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import {
   Popover,
@@ -17,19 +18,32 @@ import {
 } from "@/components/ui/command"
 import { ChevronsUpDown, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
+import {
+  CHAT_MODELS_FALLBACK,
+  findChatModelName,
+  type ChatModelsByProvider,
+} from "@/lib/chatModelsCatalog"
 
-export const POPULAR_MODELS = [
-  { id: "openai/gpt-4o", name: "GPT-4o" },
-  { id: "openai/gpt-4o-mini", name: "GPT-4o Mini" },
-  { id: "anthropic/claude-sonnet-4", name: "Claude Sonnet 4" },
-  { id: "anthropic/claude-3.5-haiku", name: "Claude 3.5 Haiku" },
-  { id: "google/gemini-2.5-pro-preview", name: "Gemini 2.5 Pro" },
-  { id: "google/gemini-2.0-flash-001", name: "Gemini 2.0 Flash" },
-  { id: "meta-llama/llama-3.1-405b-instruct", name: "Llama 3.1 405B" },
-  { id: "meta-llama/llama-3.1-70b-instruct", name: "Llama 3.1 70B" },
-  { id: "mistralai/mistral-large-2411", name: "Mistral Large" },
-  { id: "deepseek/deepseek-chat", name: "DeepSeek Chat" },
+const MODEL_GROUPS: {
+  key: keyof ChatModelsByProvider
+  heading: string
+}[] = [
+  { key: "openai", heading: "OpenAI (GPT)" },
+  { key: "anthropic", heading: "Anthropic (Claude)" },
+  { key: "google", heading: "Google" },
 ]
+
+async function fetchChatModels(): Promise<ChatModelsByProvider> {
+  const res = await fetch("/api/models", { credentials: "include" })
+  if (!res.ok) throw new Error("Failed to load models")
+  const body = (await res.json()) as unknown
+  if (!body || typeof body !== "object") throw new Error("Invalid response")
+  const o = body as Record<string, unknown>
+  for (const k of ["openai", "anthropic", "google"] as const) {
+    if (!Array.isArray(o[k])) throw new Error("Invalid response shape")
+  }
+  return body as ChatModelsByProvider
+}
 
 interface ModelSelectorProps {
   value: string
@@ -47,7 +61,20 @@ export function ModelSelector({
 }: ModelSelectorProps) {
   const [open, setOpen] = useState(false)
 
-  const selectedModel = POPULAR_MODELS.find((m) => m.id === value)
+  const { data, isPending, isError } = useQuery({
+    queryKey: ["openrouter-chat-models"],
+    queryFn: fetchChatModels,
+    staleTime: 60 * 60 * 1000,
+    retry: 1,
+  })
+
+  const catalog: ChatModelsByProvider =
+    data != null && !isError ? data : CHAT_MODELS_FALLBACK
+
+  const displayName =
+    findChatModelName(catalog, value) ??
+    value.split("/").pop() ??
+    "Select model"
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -59,43 +86,52 @@ export function ModelSelector({
             role="combobox"
             aria-expanded={open}
             className={cn("w-[200px] justify-between text-sm", className)}
-          />
+          >
+            <span className="truncate">{displayName}</span>
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
         }
-      >
-          <span className="truncate">
-            {selectedModel?.name ?? value.split("/").pop() ?? "Select model"}
-          </span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-      </PopoverTrigger>
+      />
       <PopoverContent
-        className="w-[250px] p-0"
+        className="w-[min(100vw-2rem,380px)] p-0"
         align="start"
         inModal={inModal}
       >
+        {isPending ? (
+          <p className="px-3 py-2 text-xs text-muted-foreground">
+            Loading full catalog from OpenRouter…
+          </p>
+        ) : null}
         <Command>
-          <CommandInput placeholder="Search models..." />
-          <CommandList>
+          <CommandInput placeholder="Search models…" />
+          <CommandList className="max-h-[min(60vh,420px)]">
             <CommandEmpty>No model found.</CommandEmpty>
-            <CommandGroup heading="Popular Models">
-              {POPULAR_MODELS.map((model) => (
-                <CommandItem
-                  key={model.id}
-                  value={model.id}
-                  onSelect={() => {
-                    onChange(model.id)
-                    setOpen(false)
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value === model.id ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {model.name}
-                </CommandItem>
-              ))}
-            </CommandGroup>
+            {MODEL_GROUPS.map(({ key, heading }) => {
+              const models = catalog[key]
+              if (models.length === 0) return null
+              return (
+                <CommandGroup key={key} heading={heading}>
+                  {models.map((model) => (
+                    <CommandItem
+                      key={model.id}
+                      value={`${model.name} ${model.id}`}
+                      onSelect={() => {
+                        onChange(model.id)
+                        setOpen(false)
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4 shrink-0",
+                          value === model.id ? "opacity-100" : "opacity-0",
+                        )}
+                      />
+                      <span className="truncate">{model.name}</span>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )
+            })}
           </CommandList>
         </Command>
       </PopoverContent>
