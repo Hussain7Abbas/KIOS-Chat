@@ -1,8 +1,7 @@
 "use client"
 
-import ReactMarkdown from "react-markdown"
-import rehypeHighlight from "rehype-highlight"
 import { cn } from "@/lib/utils"
+import { ResponseMarkdown } from "./ResponseMarkdown"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { FileAttachment } from "./FileAttachment"
 import { Bot, User } from "lucide-react"
@@ -53,10 +52,8 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
           {isUser ? (
             <p className="whitespace-pre-wrap">{message.content}</p>
           ) : (
-            <div className="prose prose-sm prose-invert max-w-none">
-              <ReactMarkdown rehypePlugins={[rehypeHighlight]}>
-                {message.content}
-              </ReactMarkdown>
+            <div className="prose prose-sm dark:prose-invert max-w-none prose-pre:bg-transparent prose-pre:p-0">
+              <ResponseMarkdown>{message.content}</ResponseMarkdown>
               {isStreaming && (
                 <span className="inline-block w-2 h-4 bg-foreground/70 animate-pulse ml-0.5" />
               )}
