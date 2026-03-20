@@ -12,10 +12,6 @@ export interface FileForChat {
 
 const MAX_TEXT_ATTACHMENT_CHARS = 120_000
 
-function isImageMime(mime: string): boolean {
-  return /^image\/(jpeg|png|gif|webp)$/i.test(mime)
-}
-
 async function fetchUrlBytes(url: string): Promise<ArrayBuffer> {
   const res = await fetch(url, { signal: AbortSignal.timeout(60_000) })
   if (!res.ok) {
@@ -37,10 +33,9 @@ async function extractTextFileFromUrl(
 
 /**
  * Builds user message content for OpenRouter:
- * - PDFs: OpenRouter `type: "file"` parts (`filename` + `file_data`). `file_data` is a
- *   public URL by default, or `data:application/pdf;base64,...` when `OPENROUTER_PDF_FILE_DATA=base64`.
- * - Images: `image_url` parts.
- * - Plain text / CSV: fetched server-side and inlined (small text formats only).
+ * - PDFs (legacy uploads): OpenRouter `type: "file"` parts.
+ * - Plain text: fetched server-side and inlined.
+ * - Images are not supported for new uploads; legacy image files are described in text only.
  */
 export async function buildUserMessageContent(
   textContent: string,
@@ -51,15 +46,13 @@ export async function buildUserMessageContent(
   }
 
   const textDocSections: string[] = []
-  const imageParts: ChatCompletionContentPart[] = []
   const pdfParts: ChatCompletionContentPart[] = []
 
   for (const file of files) {
-    if (isImageMime(file.mimeType)) {
-      imageParts.push({
-        type: "image_url",
-        image_url: { url: file.url },
-      })
+    if (file.mimeType.startsWith("image/")) {
+      textDocSections.push(
+        `--- Attached file: ${file.name} (${file.mimeType}) ---\n[Image attachments are not supported in chat. Ask the user to describe the image or paste text.]`
+      )
       continue
     }
 
@@ -104,13 +97,12 @@ export async function buildUserMessageContent(
     textDocSections.length > 0 ? `\n\n${textDocSections.join("\n\n")}` : ""
   const combinedText = `${textContent}${docBlock}`.trim()
 
-  if (imageParts.length === 0 && pdfParts.length === 0) {
+  if (pdfParts.length === 0) {
     return combinedText || textContent
   }
 
   const parts: ChatCompletionContentPart[] = [
     { type: "text", text: combinedText || "(attachment)" },
-    ...imageParts,
     ...pdfParts,
   ]
   return parts

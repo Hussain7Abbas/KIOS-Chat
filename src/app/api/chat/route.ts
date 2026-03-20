@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       (m) => m.role === "user" && m.files.length > 0
     )
     const attachmentSystemHint = hasAnyUploadedDocs
-      ? `\n\n[Document uploads]\nPDFs are sent to the model as OpenRouter file parts (URL or inline base64 per server config). Images use vision. Small text/CSV attachments may appear as \"--- Attached file:\" excerpts inlined in the user message. Answer using that material. Do not claim you cannot access PDFs or uploads when a file part or excerpt is present. If only a filename appears with an error note, say the file could not be loaded and suggest re-uploading or pasting text.`
+      ? `\n\n[Document uploads]\nOnly .txt file content is attached as \"--- Attached file:\" excerpts. The product allows users to pick PDFs but steers them to OCR (https://kios-scans.vercel.app) instead of attaching PDFs. Legacy threads may include PDF file parts. Images are not supported.`
       : ""
 
     const history: StreamChatMessage[] = await Promise.all(

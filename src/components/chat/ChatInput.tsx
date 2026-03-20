@@ -1,12 +1,23 @@
 "use client"
 
 import { useRef, useState, useCallback } from "react"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { SendHorizontal, Paperclip, X, Loader2 } from "lucide-react"
 import { useFileUpload } from "@/hooks/useFileUpload"
+import { isPdfAttachment } from "@/lib/mime"
+import { OCR_SERVICE_URL } from "@/lib/fileUploadValidation"
 import type { UploadResponse } from "@/types"
+import { cn } from "@/lib/utils"
 
 interface ChatInputProps {
   threadId: string
@@ -16,21 +27,31 @@ interface ChatInputProps {
 
 export function ChatInput({ threadId, isStreaming, onSend }: ChatInputProps) {
   const [input, setInput] = useState("")
+  const [ocrModalOpen, setOcrModalOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { files, isUploading, uploadFile, removeFile, clearFiles } =
-    useFileUpload({ threadId })
+    useFileUpload({
+      threadId,
+      onPdfRejected: () => setOcrModalOpen(true),
+    })
 
   const handleSubmit = useCallback(() => {
     const trimmed = input.trim()
     if (!trimmed || isStreaming) return
+
+    if (
+      files.some((f: UploadResponse) => isPdfAttachment(f.mimeType, f.name))
+    ) {
+      setOcrModalOpen(true)
+      return
+    }
 
     const fileIds = files.map((f: UploadResponse) => f.id)
     onSend(trimmed, fileIds.length > 0 ? fileIds : undefined)
     setInput("")
     clearFiles()
 
-    // Reset textarea height
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto"
     }
@@ -57,7 +78,6 @@ export function ChatInput({ threadId, isStreaming, onSend }: ChatInputProps) {
       await uploadFile(file)
     }
 
-    // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
@@ -65,7 +85,36 @@ export function ChatInput({ threadId, isStreaming, onSend }: ChatInputProps) {
 
   return (
     <div className="border-t border-border bg-background/95 backdrop-blur-sm p-4">
-      {/* File Preview Chips */}
+      <Dialog open={ocrModalOpen} onOpenChange={setOcrModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Convert this PDF with KIOS Scans</DialogTitle>
+            <DialogDescription>
+              PDFs are not attached directly in chat. Use KIOS Scans to turn
+              your PDF into text, then upload the resulting .txt file or paste
+              the text into your message.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-1">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOcrModalOpen(false)}
+            >
+              Close
+            </Button>
+            <a
+              href={OCR_SERVICE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(buttonVariants())}
+            >
+              Open KIOS Scans
+            </a>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {files.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-3">
           {files.map((file: UploadResponse) => (
@@ -78,6 +127,7 @@ export function ChatInput({ threadId, isStreaming, onSend }: ChatInputProps) {
                 {file.name}
               </span>
               <button
+                type="button"
                 onClick={() => removeFile(file.id)}
                 className="hover:text-destructive transition-colors"
               >
@@ -89,7 +139,6 @@ export function ChatInput({ threadId, isStreaming, onSend }: ChatInputProps) {
       )}
 
       <div className="flex items-end gap-2">
-        {/* File Attachment Button */}
         <Button
           size="icon"
           variant="ghost"
@@ -110,10 +159,9 @@ export function ChatInput({ threadId, isStreaming, onSend }: ChatInputProps) {
           onChange={handleFileSelect}
           className="hidden"
           multiple
-          accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,text/plain,text/markdown,text/csv"
+          accept="text/plain,.txt,application/pdf,.pdf"
         />
 
-        {/* Text Input */}
         <Textarea
           ref={textareaRef}
           value={input}
@@ -125,7 +173,6 @@ export function ChatInput({ threadId, isStreaming, onSend }: ChatInputProps) {
           className="min-h-[40px] max-h-[200px] resize-none bg-card border-border/50"
         />
 
-        {/* Send Button */}
         <Button
           size="icon"
           onClick={handleSubmit}

@@ -3,6 +3,7 @@ import { requireAuthApi } from "@/lib/guards"
 import { prisma } from "@/lib/prisma"
 import { validateFile, uploadToImageKit } from "@/lib/upload"
 import { resolveUploadedMimeType } from "@/lib/mime"
+import { pdfUploadRejectionMessage } from "@/lib/fileUploadValidation"
 
 export async function POST(request: NextRequest) {
   const { session, error } = await requireAuthApi(request)
@@ -34,9 +35,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Thread not found" }, { status: 404 })
     }
 
-    // Validate file
     const validation = validateFile(file)
     if (!validation.valid) {
+      if (validation.kind === "pdf") {
+        return NextResponse.json(
+          {
+            error: pdfUploadRejectionMessage(),
+            showOcrModal: true,
+          },
+          { status: 400 }
+        )
+      }
       return NextResponse.json({ error: validation.error }, { status: 400 })
     }
 

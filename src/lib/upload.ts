@@ -1,5 +1,6 @@
 import ImageKit from "imagekit"
 import { resolveUploadedMimeType } from "@/lib/mime"
+import { validateChatUpload } from "@/lib/fileUploadValidation"
 
 const imagekit = new ImageKit({
   publicKey: process.env.IMAGEKIT_PUBLIC_KEY!,
@@ -7,46 +8,8 @@ const imagekit = new ImageKit({
   urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT!,
 })
 
-const ALLOWED_IMAGE_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/gif",
-  "image/webp",
-]
-
-const ALLOWED_DOCUMENT_TYPES = [
-  "application/pdf",
-  "text/plain",
-  "text/markdown",
-  "text/csv",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-]
-
-const ALLOWED_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_DOCUMENT_TYPES]
-
-const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
-
-export function validateFile(file: File): { valid: boolean; error?: string } {
-  const effectiveType = resolveUploadedMimeType(file)
-  if (!ALLOWED_TYPES.includes(effectiveType)) {
-    return {
-      valid: false,
-      error: `File type "${file.type || "(empty)"}" is not allowed. Allowed: images (jpg, png, gif, webp) and documents (pdf, txt, md, csv, docx).`,
-    }
-  }
-
-  if (file.size > MAX_FILE_SIZE) {
-    return {
-      valid: false,
-      error: `File size exceeds 10MB limit.`,
-    }
-  }
-
-  return { valid: true }
-}
-
-function isImageType(mimeType: string): boolean {
-  return ALLOWED_IMAGE_TYPES.includes(mimeType)
+export function validateFile(file: File) {
+  return validateChatUpload(file)
 }
 
 export async function uploadToImageKit(
