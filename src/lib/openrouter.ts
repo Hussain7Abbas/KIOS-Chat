@@ -121,6 +121,24 @@ export async function streamChatRound(params: StreamChatRoundParams) {
   return openRouterClient.chat.completions.create(body)
 }
 
+type OpenRouterStreamingChatBody =
+  OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming & {
+    stream_options?: { include_usage?: boolean }
+  }
+
+export async function streamSubAgentMessages(params: {
+  model: string
+  messages: ChatCompletionMessageParam[]
+}) {
+  const body: OpenRouterStreamingChatBody = {
+    model: params.model,
+    messages: params.messages,
+    stream: true,
+    stream_options: { include_usage: true },
+  }
+  return openRouterClient.chat.completions.create(body)
+}
+
 export interface SubAgentCompletionResult {
   content: string
   usage: {

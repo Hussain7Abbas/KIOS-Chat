@@ -142,35 +142,53 @@ model SubAgentOutputParam {
 }
 
 model SubThread {
-  id                   String          @id @default(cuid())
-  threadId             String
-  thread               Thread          @relation(fields: [threadId], references: [id], onDelete: Cascade)
-  subAgentId           String
-  subAgent             SubAgent        @relation(fields: [subAgentId], references: [id], onDelete: Cascade)
-  input                Json
-  output               String?         @db.Text
-  status               SubThreadStatus @default(PENDING)
-  error                String?         @db.Text
-  promptTokens         Int?
-  completionTokens     Int?
-  totalTokens          Int?
-  contextLength        Int?
-  createdAt            DateTime        @default(now())
-  updatedAt            DateTime        @updatedAt
+  id                String              @id @default(cuid())
+  threadId          String
+  thread            Thread              @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  subAgentId        String
+  subAgent          SubAgent            @relation(fields: [subAgentId], references: [id], onDelete: Cascade)
+  anchorMessageId   String?
+  anchorMessage     Message?            @relation("SubThreadAnchor", fields: [anchorMessageId], references: [id], onDelete: SetNull)
+  input             Json
+  output            String?             @db.Text
+  status            SubThreadStatus     @default(PENDING)
+  error             String?             @db.Text
+  promptTokens      Int?
+  completionTokens  Int?
+  totalTokens       Int?
+  contextLength     Int?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  messages          SubThreadMessage[]
 
   @@index([threadId])
   @@index([subAgentId])
+  @@index([anchorMessageId])
+}
+
+model SubThreadMessage {
+  id          String    @id @default(cuid())
+  subThreadId String
+  subThread   SubThread @relation(fields: [subThreadId], references: [id], onDelete: Cascade)
+  role        String
+  content     String    @db.Text
+  createdAt   DateTime  @default(now())
+  /// When set, a short notice was appended to the main thread for this reply.
+  submittedAt DateTime?
+
+  @@index([subThreadId])
 }
 
 model Message {
-  id        String   @id @default(cuid())
-  threadId  String
-  thread    Thread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
-  role      String
-  content   String   @db.Text
-  model     String?
-  files     File[]
-  createdAt DateTime @default(now())
+  id                 String      @id @default(cuid())
+  threadId           String
+  thread             Thread      @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  role               String
+  content            String      @db.Text
+  model              String?
+  files              File[]
+  createdAt          DateTime    @default(now())
+  anchoredSubThreads SubThread[] @relation("SubThreadAnchor")
 
   @@index([threadId])
 }

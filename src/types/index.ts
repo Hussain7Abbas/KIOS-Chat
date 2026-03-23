@@ -51,6 +51,15 @@ export type SubThreadListStatus =
   | "COMPLETED"
   | "FAILED"
 
+export interface SubThreadMessageItem {
+  id: string
+  role: "user" | "assistant"
+  content: string
+  createdAt: string
+  /** ISO time when this reply was submitted to the main thread */
+  submittedAt?: string | null
+}
+
 export interface SubThreadListItem {
   id: string
   subAgentName: string
@@ -59,6 +68,7 @@ export interface SubThreadListItem {
   output: string | null
   error: string | null
   createdAt: string
+  anchorMessageId?: string | null
   promptTokens?: number | null
   completionTokens?: number | null
   totalTokens?: number | null

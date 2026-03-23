@@ -67,12 +67,14 @@ function mergeSubthreadFromEvent(
     output: null,
     error: null,
     createdAt: new Date().toISOString(),
+    anchorMessageId: null,
   }
 
   return {
     ...base,
     subAgentName: ev.subAgentName,
     status: statusMap[ev.status],
+    anchorMessageId: base.anchorMessageId,
     input: ev.input !== undefined ? ev.input : base.input,
     output: ev.output !== undefined ? ev.output : base.output,
     error: ev.error !== undefined ? ev.error : base.error,
@@ -102,6 +104,8 @@ export function useChat({ threadId, onThreadTitleUpdate }: UseChatOptions) {
     totalTokens: null,
     contextLength: null,
   })
+  /** Bumps when main thread (and sub-thread list) reload — sub-thread panels refetch detail. */
+  const [mainThreadSyncGeneration, setMainThreadSyncGeneration] = useState(0)
   const abortControllerRef = useRef<AbortController | null>(null)
 
   const loadSubThreads = useCallback(async () => {
@@ -111,6 +115,7 @@ export function useChat({ threadId, onThreadTitleUpdate }: UseChatOptions) {
       const data = await res.json()
       const raw = data.subThreads as Array<{
         id: string
+        anchorMessageId: string | null
         input: unknown
         output: string | null
         status: SubThreadListItem["status"]
@@ -127,6 +132,7 @@ export function useChat({ threadId, onThreadTitleUpdate }: UseChatOptions) {
           id: s.id,
           subAgentName: s.subAgent.name,
           status: s.status,
+          anchorMessageId: s.anchorMessageId,
           input: asRecord(s.input),
           output: s.output,
           error: s.error,
@@ -165,6 +171,7 @@ export function useChat({ threadId, onThreadTitleUpdate }: UseChatOptions) {
       // silently fail
     }
     await loadSubThreads()
+    setMainThreadSyncGeneration((g) => g + 1)
   }, [threadId, loadSubThreads])
 
   useEffect(() => {
@@ -312,19 +319,7 @@ export function useChat({ threadId, onThreadTitleUpdate }: UseChatOptions) {
           }
         }
 
-        if (accumulated) {
-          const assistantMessage: ChatMessage = {
-            id: `assistant-${Date.now()}`,
-            threadId,
-            role: "assistant",
-            content: accumulated,
-            model,
-            createdAt: new Date().toISOString(),
-          }
-          setMessages((prev) => [...prev, assistantMessage])
-        }
-
-        await loadSubThreads()
+        await loadMessages()
         queryClient.invalidateQueries({ queryKey: ["threads"] })
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return
@@ -364,5 +359,6 @@ export function useChat({ threadId, onThreadTitleUpdate }: UseChatOptions) {
     loadSubThreads,
     subAgentActivity,
     threadUsage,
+    mainThreadSyncGeneration,
   }
 }

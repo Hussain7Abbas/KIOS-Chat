@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { FileAttachment } from "./FileAttachment"
 import { Bot, User } from "lucide-react"
 import type { ChatMessage, FileAttachment as FileAttachmentType } from "@/types"
+import { MessageCopyButton } from "./MessageCopyButton"
 
 interface MessageBubbleProps {
   message: ChatMessage
@@ -44,12 +45,16 @@ export function MessageBubble({ message, isStreaming }: MessageBubbleProps) {
       >
         <div
           className={cn(
-            "rounded-2xl px-4 py-2.5 text-sm",
+            "relative rounded-2xl px-4 py-2.5 text-sm",
+            !isUser && "group/message pe-10",
             isUser
               ? "bg-primary text-primary-foreground rounded-tr-sm"
               : "bg-muted text-foreground rounded-tl-sm"
           )}
         >
+          {!isUser && message.content.trim().length > 0 && (
+            <MessageCopyButton text={message.content} />
+          )}
           {isUser ? (
             <p className="whitespace-pre-wrap">{message.content}</p>
           ) : (

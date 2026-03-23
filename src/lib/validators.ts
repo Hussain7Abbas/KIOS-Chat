@@ -33,6 +33,20 @@ export const sendMessageSchema = z.object({
 
 export type SendMessageInput = z.infer<typeof sendMessageSchema>
 
+export const subThreadChatSchema = z.object({
+  content: z.string().min(1, "Message cannot be empty"),
+})
+
+export type SubThreadChatInput = z.infer<typeof subThreadChatSchema>
+
+export const commitSubThreadMessageSchema = z.object({
+  messageId: z.string().min(1, "Message ID is required"),
+})
+
+export type CommitSubThreadMessageInput = z.infer<
+  typeof commitSubThreadMessageSchema
+>
+
 // ─── Thread Schemas ─────────────────────────────────────────────────────────
 
 export const renameThreadSchema = z.object({

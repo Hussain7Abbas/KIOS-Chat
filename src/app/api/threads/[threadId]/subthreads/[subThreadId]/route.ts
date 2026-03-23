@@ -25,14 +25,10 @@ export async function GET(
       where: { id: subThreadId, threadId },
       include: {
         subAgent: {
-          select: {
-            id: true,
-            name: true,
-            model: true,
-            outputFormat: true,
-            instructions: true,
-            params: true,
-          },
+          select: { name: true },
+        },
+        messages: {
+          orderBy: { createdAt: "asc" },
         },
       },
     })
@@ -42,10 +38,10 @@ export async function GET(
     }
 
     return NextResponse.json({ subThread })
-  } catch {
-    return NextResponse.json(
-      { error: "Failed to fetch sub-thread" },
-      { status: 500 }
-    )
+  } catch (e) {
+    const message =
+      e instanceof Error ? e.message : "Failed to fetch sub-thread"
+    console.error("[subthread GET]", e)
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

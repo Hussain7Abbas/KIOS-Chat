@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, useCallback } from "react"
+import { Fragment, useEffect, useRef, useState, useCallback } from "react"
 import { useChat } from "@/hooks/useChat"
 import { MessageBubble } from "./MessageBubble"
 import { ChatInput } from "./ChatInput"
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { SubThreadSidebar } from "@/components/chat/SubThreadSidebar"
+import { SubThreadBox } from "@/components/chat/SubThreadBox"
 import { useQueryClient } from "@tanstack/react-query"
 import {
   Sparkles,
@@ -70,9 +71,11 @@ export function ChatWindow({ threadId, threadTitle }: ChatWindowProps) {
     streamingContent,
     sendMessage,
     loadMessages,
+    loadSubThreads,
     subThreads,
     subAgentActivity,
     threadUsage,
+    mainThreadSyncGeneration,
   } = useChat({
     threadId,
     onThreadTitleUpdate: handleThreadTitleUpdate,
@@ -102,6 +105,11 @@ export function ChatWindow({ threadId, threadTitle }: ChatWindowProps) {
   const handleSuggestedPrompt = (prompt: string) => {
     sendMessage(prompt, chatModel)
   }
+
+  const scrollSubThreadIntoView = useCallback((subThreadId: string) => {
+    const el = document.getElementById(`subthread-${subThreadId}`)
+    el?.scrollIntoView({ behavior: "smooth", block: "nearest" })
+  }, [])
 
   const isEmpty = messages.length === 0 && !isStreaming
 
@@ -179,7 +187,21 @@ export function ChatWindow({ threadId, threadTitle }: ChatWindowProps) {
             /* Messages */
             <div className="py-4">
               {messages.map((message: ChatMessage) => (
-                <MessageBubble key={message.id} message={message} />
+                <Fragment key={message.id}>
+                  <MessageBubble message={message} />
+                  {subThreads
+                    .filter((st) => st.anchorMessageId === message.id)
+                    .map((st) => (
+                      <SubThreadBox
+                        key={st.id}
+                        threadId={threadId}
+                        item={st}
+                        mainThreadSyncGeneration={mainThreadSyncGeneration}
+                        onListUpdated={loadSubThreads}
+                        onMainThreadUpdated={loadMessages}
+                      />
+                    ))}
+                </Fragment>
               ))}
 
               {/* Streaming Message */}
@@ -208,6 +230,19 @@ export function ChatWindow({ threadId, threadTitle }: ChatWindowProps) {
                 </div>
               )}
 
+              {subThreads
+                .filter((st) => !st.anchorMessageId)
+                .map((st) => (
+                  <SubThreadBox
+                    key={st.id}
+                    threadId={threadId}
+                    item={st}
+                    mainThreadSyncGeneration={mainThreadSyncGeneration}
+                    onListUpdated={loadSubThreads}
+                    onMainThreadUpdated={loadMessages}
+                  />
+                ))}
+
               <div ref={scrollEndRef} />
             </div>
           )}
@@ -227,6 +262,7 @@ export function ChatWindow({ threadId, threadTitle }: ChatWindowProps) {
             open={subSidebarOpen}
             onOpenChange={setSubSidebarOpen}
             items={subThreads}
+            onSelectSubThread={scrollSubThreadIntoView}
           />
         )}
       </div>

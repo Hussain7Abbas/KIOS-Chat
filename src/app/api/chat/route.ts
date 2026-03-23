@@ -24,6 +24,11 @@ import {
   getSubAgentQueue,
   getSubAgentQueueEvents,
 } from "@/lib/queue"
+import {
+  runSubAgentSubThread,
+  subAgentQueueEnabled,
+} from "@/lib/subAgentExecutor"
+import { commitAllPendingSubThreadsForThread } from "@/lib/subThreadCommit"
 import { getContextLengthForModel } from "@/lib/modelContext"
 import {
   addUsage,
@@ -82,6 +87,8 @@ export async function POST(request: NextRequest) {
     if (!thread || thread.userId !== session.user.id) {
       return NextResponse.json({ error: "Thread not found" }, { status: 404 })
     }
+
+    await commitAllPendingSubThreadsForThread(threadId)
 
     await prisma.message.create({
       data: {
@@ -165,9 +172,12 @@ export async function POST(request: NextRequest) {
 
     const readableStream = new ReadableStream({
       async start(controller) {
-        const queue = getSubAgentQueue()
-        const queueEvents = getSubAgentQueueEvents()
-        await queueEvents.waitUntilReady()
+        const useQueue = subAgentQueueEnabled()
+        const queue = useQueue ? getSubAgentQueue() : null
+        const queueEvents = useQueue ? getSubAgentQueueEvents() : null
+        if (queueEvents) {
+          await queueEvents.waitUntilReady()
+        }
 
         const contextLength = await getContextLengthForModel(model)
         let usageAcc = emptyUsage()
@@ -184,6 +194,7 @@ export async function POST(request: NextRequest) {
           )
 
           const apiMessages = historyToApiMessages(history)
+          const createdSubThreadIds: string[] = []
 
           let round = 0
           let done = false
@@ -325,6 +336,7 @@ export async function POST(request: NextRequest) {
                     status: "PENDING",
                   },
                 })
+                createdSubThreadIds.push(subThread.id)
 
                 controller.enqueue(
                   encoder.encode(
@@ -339,25 +351,33 @@ export async function POST(request: NextRequest) {
                   )
                 )
 
-                const job = await queue.add(
-                  "run",
-                  { subThreadId: subThread.id },
-                  { removeOnComplete: true }
-                )
-
-                try {
-                  await job.waitUntilFinished(
-                    queueEvents,
-                    SUB_AGENT_JOB_TIMEOUT_MS
+                if (useQueue && queue && queueEvents) {
+                  const job = await queue.add(
+                    "run",
+                    { subThreadId: subThread.id },
+                    { removeOnComplete: true }
                   )
-                } catch {
-                  await prisma.subThread.update({
-                    where: { id: subThread.id },
-                    data: {
-                      status: "FAILED",
-                      error: "Sub-agent timed out or job failed",
-                    },
-                  })
+
+                  try {
+                    await job.waitUntilFinished(
+                      queueEvents,
+                      SUB_AGENT_JOB_TIMEOUT_MS
+                    )
+                  } catch {
+                    await prisma.subThread.update({
+                      where: { id: subThread.id },
+                      data: {
+                        status: "FAILED",
+                        error: "Sub-agent timed out or job failed",
+                      },
+                    })
+                  }
+                } else {
+                  try {
+                    await runSubAgentSubThread(subThread.id)
+                  } catch {
+                    /* runSubAgentSubThread sets FAILED on error */
+                  }
                 }
 
                 const updated = await prisma.subThread.findUnique({
@@ -430,7 +450,7 @@ export async function POST(request: NextRequest) {
             }
           }
 
-          await prisma.message.create({
+          const savedAssistantMessage = await prisma.message.create({
             data: {
               threadId,
               role: "assistant",
@@ -438,6 +458,13 @@ export async function POST(request: NextRequest) {
               model,
             },
           })
+
+          if (createdSubThreadIds.length > 0) {
+            await prisma.subThread.updateMany({
+              where: { id: { in: createdSubThreadIds } },
+              data: { anchorMessageId: savedAssistantMessage.id },
+            })
+          }
 
           const hasUsage =
             usageAcc.promptTokens > 0 ||
