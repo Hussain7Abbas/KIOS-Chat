@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAdminApi } from "@/lib/guards"
+import {
+  agentPromptLengthError,
+  getMaxAgentInstructionChars,
+} from "@/lib/modelContext"
 import { prisma } from "@/lib/prisma"
 import { updateSubAgentSchema } from "@/lib/validators"
 
@@ -69,6 +73,18 @@ export async function PATCH(
     if (!existing) {
       console.warn("[subagent PATCH] not found", { subAgentId })
       return NextResponse.json({ error: "Sub-agent not found" }, { status: 404 })
+    }
+
+    if (parsed.data.instructions !== undefined) {
+      const modelId = parsed.data.model ?? existing.model
+      const maxChars = await getMaxAgentInstructionChars(modelId)
+      const lengthError = agentPromptLengthError(
+        parsed.data.instructions,
+        maxChars,
+      )
+      if (lengthError) {
+        return NextResponse.json({ error: lengthError }, { status: 400 })
+      }
     }
 
     const { params, outputParams, ...rest } = parsed.data

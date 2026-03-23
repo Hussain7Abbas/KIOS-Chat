@@ -44,7 +44,7 @@ export type RenameThreadInput = z.infer<typeof renameThreadSchema>
 // ─── Agent Schemas ──────────────────────────────────────────────────────────
 
 export const agentPromptSchema = z.object({
-  prompt: z.string().max(5000, "Prompt cannot exceed 5000 characters"),
+  prompt: z.string(),
 })
 
 export type AgentPromptInput = z.infer<typeof agentPromptSchema>
@@ -81,7 +81,7 @@ export const createSubAgentSchema = z.object({
     .min(1)
     .max(64)
     .regex(subAgentToolNameRegex, "Name must start with a letter; use letters, digits, underscores only"),
-  instructions: z.string().min(1).max(20000),
+  instructions: z.string().min(1),
   model: z.string().min(1),
   outputFormat: z.enum(["text", "json", "markdown"]),
   params: z.array(subAgentParamSchema).default([]),

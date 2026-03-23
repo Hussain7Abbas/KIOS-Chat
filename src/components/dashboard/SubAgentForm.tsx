@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from "react"
+import { InstructionContextLimitLines } from "@/components/dashboard/InstructionContextLimitLines"
+import { useInstructionContextLimit } from "@/hooks/useInstructionContextLimit"
 import { createSubAgentSchema } from "@/lib/validators"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -106,6 +108,15 @@ export function SubAgentForm({ open, onOpenChange, editing }: SubAgentFormProps)
       : []
   )
 
+  const {
+    limitInfo,
+    maxChars,
+    contextTokens,
+    limitQueryPending,
+    limitQueryError,
+    overLimit,
+  } = useInstructionContextLimit(model, instructions.length)
+
   const addParam = () => {
     setParams((p) => [...p, emptyParamRow()])
   }
@@ -209,24 +220,38 @@ export function SubAgentForm({ open, onOpenChange, editing }: SubAgentFormProps)
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="subagent-instructions">Instructions</Label>
-              <Textarea
-                id="subagent-instructions"
-                value={instructions}
-                onChange={(e) => setInstructions(e.target.value)}
-                rows={6}
-                className="font-mono text-sm min-h-[140px]"
-                required
-              />
-            </div>
-
-            <div className="grid gap-2">
               <Label>Model</Label>
               <ModelSelector
                 value={model}
                 onChange={setModel}
                 inModal
                 className="w-full max-w-[min(100%,280px)]"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="subagent-instructions">Instructions</Label>
+              <p className="text-xs text-muted-foreground">
+                Max length follows this sub-agent&apos;s model context from
+                OpenRouter (estimate; space reserved for the tool run).
+              </p>
+              <Textarea
+                id="subagent-instructions"
+                value={instructions}
+                onChange={(e) => setInstructions(e.target.value)}
+                rows={6}
+                className="font-mono text-sm min-h-[140px]"
+                maxLength={maxChars ?? undefined}
+                required
+              />
+              <InstructionContextLimitLines
+                charCount={instructions.length}
+                maxChars={maxChars}
+                contextTokens={contextTokens}
+                limitInfo={limitInfo}
+                limitQueryPending={limitQueryPending}
+                limitQueryError={limitQueryError}
+                size="compact"
               />
             </div>
 
@@ -442,7 +467,7 @@ export function SubAgentForm({ open, onOpenChange, editing }: SubAgentFormProps)
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" disabled={pending || overLimit}>
               {pending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : editing ? (

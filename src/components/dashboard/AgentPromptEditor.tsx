@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useEffect, useCallback } from "react"
 import { saveAgentPromptAction } from "@/app/actions/agent.actions"
+import { useInstructionContextLimit } from "@/hooks/useInstructionContextLimit"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
@@ -9,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { ModelSelector } from "@/components/chat/ModelSelector"
 import { useSession } from "@/lib/auth-client"
+import { InstructionContextLimitLines } from "@/components/dashboard/InstructionContextLimitLines"
 import { Loader2, Save, Bot, User } from "lucide-react"
 import { toast } from "sonner"
 
@@ -25,7 +27,15 @@ export function AgentPromptEditor({
   const [preferredModel, setPreferredModel] = useState(initialPreferredModel)
   const [isPending, startTransition] = useTransition()
   const { refetch: refetchSession } = useSession()
-  const maxLength = 5000
+
+  const {
+    limitInfo,
+    maxChars,
+    contextTokens,
+    limitQueryPending,
+    limitQueryError,
+    overLimit,
+  } = useInstructionContextLimit(preferredModel, prompt.length)
 
   useEffect(() => {
     setPreferredModel(initialPreferredModel)
@@ -74,6 +84,9 @@ export function AgentPromptEditor({
           <CardDescription>
             This prompt will be prepended to every conversation as the system
             message. It defines your AI agent&apos;s personality and behavior.
+            Maximum size follows the selected main chat model&apos;s context from
+            OpenRouter (characters are an estimate; space is reserved for the
+            thread).
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -95,13 +108,21 @@ export function AgentPromptEditor({
             placeholder="You are a helpful AI assistant specialized in..."
             rows={12}
             className="resize-y min-h-[240px] font-mono text-sm"
-            maxLength={maxLength}
+            maxLength={maxChars ?? undefined}
           />
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              {prompt.length}/{maxLength} characters
-            </p>
-            <Button onClick={handleSave} disabled={isPending}>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <InstructionContextLimitLines
+              charCount={prompt.length}
+              maxChars={maxChars}
+              contextTokens={contextTokens}
+              limitInfo={limitInfo}
+              limitQueryPending={limitQueryPending}
+              limitQueryError={limitQueryError}
+            />
+            <Button
+              onClick={handleSave}
+              disabled={isPending || overLimit}
+            >
               {isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (

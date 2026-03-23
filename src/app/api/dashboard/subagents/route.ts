@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAdminApi } from "@/lib/guards"
+import {
+  agentPromptLengthError,
+  getMaxAgentInstructionChars,
+} from "@/lib/modelContext"
 import { prisma } from "@/lib/prisma"
 import { createSubAgentSchema } from "@/lib/validators"
 
@@ -51,6 +55,12 @@ export async function POST(request: NextRequest) {
 
     const { name, instructions, model, outputFormat, params, outputParams } =
       parsed.data
+
+    const maxChars = await getMaxAgentInstructionChars(model)
+    const lengthError = agentPromptLengthError(instructions, maxChars)
+    if (lengthError) {
+      return NextResponse.json({ error: lengthError }, { status: 400 })
+    }
 
     const created = await prisma.subAgent.create({
       data: {
