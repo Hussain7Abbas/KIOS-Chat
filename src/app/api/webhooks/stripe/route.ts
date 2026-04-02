@@ -33,9 +33,9 @@ export async function POST(request: NextRequest) {
     const session = event.data.object as Stripe.Checkout.Session
 
     const userId = session.metadata?.userId
-    const threadsAmount = parseInt(session.metadata?.threadsAmount ?? "0", 10)
+    const coinsAmount = parseInt(session.metadata?.coinsAmount ?? "0", 10)
 
-    if (!userId || !threadsAmount) {
+    if (!userId || !Number.isFinite(coinsAmount) || coinsAmount < 1) {
       return NextResponse.json(
         { error: "Missing metadata" },
         { status: 400 }
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
           data: {
             userId,
             stripeId: session.id,
-            threadsAmount,
+            coinsAmount,
             amountPaid: session.amount_total ?? 0,
           },
         })
@@ -56,8 +56,8 @@ export async function POST(request: NextRequest) {
         await tx.user.update({
           where: { id: userId },
           data: {
-            threadsRemaining: { increment: threadsAmount },
-            threadsPurchased: { increment: threadsAmount },
+            coinsBalance: { increment: coinsAmount },
+            coinsPurchased: { increment: coinsAmount },
           },
         })
       })

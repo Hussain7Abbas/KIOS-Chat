@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Check, Zap } from "lucide-react"
 
 interface SubscriptionCardProps {
-  threads: number
+  coins: number
   price: number
   label: string
   isPopular?: boolean
@@ -15,7 +15,7 @@ interface SubscriptionCardProps {
 }
 
 export function SubscriptionCard({
-  threads,
+  coins,
   price,
   label,
   isPopular,
@@ -40,7 +40,7 @@ export function SubscriptionCard({
       )}
       <CardHeader className="text-center pb-2">
         <CardTitle className="text-lg">{label}</CardTitle>
-        <CardDescription>{threads} threads</CardDescription>
+        <CardDescription>{coins} coins</CardDescription>
       </CardHeader>
       <CardContent className="text-center space-y-4">
         <div>
@@ -51,7 +51,7 @@ export function SubscriptionCard({
         <ul className="space-y-2 text-sm text-left">
           <li className="flex items-center gap-2">
             <Check className="h-4 w-4 text-green-500" />
-            <span>{threads} chat threads</span>
+            <span>{coins} coins added to your balance</span>
           </li>
           <li className="flex items-center gap-2">
             <Check className="h-4 w-4 text-green-500" />
@@ -63,7 +63,7 @@ export function SubscriptionCard({
           </li>
           <li className="flex items-center gap-2">
             <Check className="h-4 w-4 text-green-500" />
-            <span>Never expires</span>
+            <span>Coins never expire</span>
           </li>
         </ul>
 

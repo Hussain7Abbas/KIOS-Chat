@@ -16,7 +16,8 @@ function notifyChatError() {
 
 interface ThreadsQueryData {
   threads: ThreadData[]
-  threadsRemaining: number
+  coinsBalance: number
+  threadPrice: number
 }
 
 interface UseChatOptions {

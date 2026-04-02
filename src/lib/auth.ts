@@ -3,8 +3,23 @@ import { prismaAdapter } from "better-auth/adapters/prisma"
 import { env } from "@/lib/env"
 import { prisma } from "@/lib/prisma"
 
+function buildTrustedOrigins(): string[] {
+  const origins = new Set<string>()
+  origins.add(new URL(env.BETTER_AUTH_URL).origin)
+  origins.add(new URL(env.NEXT_PUBLIC_APP_URL).origin)
+  if (process.env.NODE_ENV === "development") {
+    for (const port of ["3000", "3001", "3002", "3003"]) {
+      origins.add(`http://localhost:${port}`)
+      origins.add(`http://127.0.0.1:${port}`)
+    }
+  }
+  return [...origins]
+}
+
 export const auth = betterAuth({
   baseURL: env.BETTER_AUTH_URL,
+
+  trustedOrigins: buildTrustedOrigins(),
 
   database: prismaAdapter(prisma, { provider: "postgresql" }),
 
@@ -36,12 +51,12 @@ export const auth = betterAuth({
         defaultValue: "user",
         input: false,
       },
-      threadsRemaining: {
+      coinsBalance: {
         type: "number",
         defaultValue: 3,
         input: false,
       },
-      threadsPurchased: {
+      coinsPurchased: {
         type: "number",
         defaultValue: 0,
         input: false,

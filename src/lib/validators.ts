@@ -114,10 +114,38 @@ export const updateSubAgentSchema = z.object({
 export type CreateSubAgentInput = z.infer<typeof createSubAgentSchema>
 export type UpdateSubAgentInput = z.infer<typeof updateSubAgentSchema>
 
-// ─── Subscription Schemas ───────────────────────────────────────────────────
+// ─── Coin Purchase Schemas ───────────────────────────────────────────────────
 
-export const purchaseThreadsSchema = z.object({
-  packageIndex: z.number().int().min(0).max(2),
+export const purchaseCoinsSchema = z.object({
+  coinPackageId: z.string().min(1),
 })
 
-export type PurchaseThreadsInput = z.infer<typeof purchaseThreadsSchema>
+export type PurchaseCoinsInput = z.infer<typeof purchaseCoinsSchema>
+
+// ─── Settings & Coin Packages ────────────────────────────────────────────────
+
+export const patchSettingSchema = z.object({
+  key: z.string().min(1),
+  value: z.string(),
+})
+
+export type PatchSettingInput = z.infer<typeof patchSettingSchema>
+
+export const createCoinPackageSchema = z.object({
+  label: z.string().min(1).max(128),
+  coins: z.number().int().min(1),
+  priceInCents: z.number().int().min(1),
+  isPopular: z.boolean().optional(),
+  isActive: z.boolean().optional(),
+  sortOrder: z.number().int().optional(),
+})
+
+export type CreateCoinPackageInput = z.infer<typeof createCoinPackageSchema>
+
+export const updateCoinPackageSchema = createCoinPackageSchema
+  .partial()
+  .refine((data) => Object.keys(data).length > 0, {
+    message: "At least one field is required",
+  })
+
+export type UpdateCoinPackageInput = z.infer<typeof updateCoinPackageSchema>

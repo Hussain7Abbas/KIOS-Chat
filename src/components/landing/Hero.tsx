@@ -103,7 +103,7 @@ export function Hero({ isAuthenticated }: HeroProps) {
           <div className="h-8 w-px bg-border" />
           <div>
             <span className="text-2xl font-bold text-foreground block">3</span>
-            Free Threads
+            Free Coins
           </div>
           <div className="h-8 w-px bg-border" />
           <div>

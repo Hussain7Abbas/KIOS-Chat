@@ -1,0 +1,39 @@
+---
+description: Prisma seed layout, entrypoint, and idempotency conventions
+globs: src/prisma/seed/**/*.ts
+alwaysApply: false
+---
+
+# Prisma seeding
+
+## Layout
+
+- **Entry:** [`src/prisma/seed/main.ts`](src/prisma/seed/main.ts) — import and run table seeds in a fixed order (e.g. settings → coin packages → users).
+- **Per-table modules:** [`src/prisma/seed/tables/*.ts`](src/prisma/seed/tables/) — one file per domain/table group (e.g. `settings.ts`, `coin-package.ts`, `users.ts`). Export a single async function per file, e.g. `seedSettingsTable()`, `seedCoinPackageTable()`, `seedUsersTable()`.
+- **Prisma config:** `package.json` → `prisma.seed` should run `bun run src/prisma/seed/main.ts` (not a one-off `seed.ts` at repo root).
+
+## Idempotency
+
+Seeds must be **safe to run multiple times** without duplicate rows or destructive resets unless explicitly intended.
+
+| Area | Pattern |
+|------|--------|
+| **Settings** (`Setting`) | `upsert` on natural key (`key`). |
+| **Lookup / catalog rows** (e.g. `CoinPackage`) | Prefer a **stable identifier** (e.g. `label`): `findFirst` → `update` if found, else `create`. Avoid `if (count() === 0) createMany` — that skips syncing after the first row exists. |
+| **Users / auth** | Create accounts **only when missing** (e.g. `findUnique` by email). Do **not** overwrite passwords or balances for existing users unless the product explicitly requires a reconcile step. |
+
+## Imports
+
+Use project aliases from seed files: `@/lib/prisma`, `@/lib/auth`, `@/lib/pricing-constants`, etc. (same as app code).
+
+## New table seed
+
+1. Add `src/prisma/seed/tables/<name>.ts` with an exported `seed…Table()` function.
+2. Call it from `main.ts` in the correct dependency order (foreign keys first).
+
+```typescript
+// main.ts (pattern)
+await seedSettingsTable()
+await seedCoinPackageTable()
+await seedUsersTable()
+```

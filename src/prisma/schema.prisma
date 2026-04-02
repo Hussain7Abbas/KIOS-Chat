@@ -10,23 +10,23 @@ datasource db {
 // ─── Better Auth Tables ─────────────────────────────────────────────────────
 
 model User {
-  id                String    @id
-  name              String
-  email             String    @unique
-  emailVerified     Boolean   @default(false)
-  image             String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  role              String    @default("user")
-  threadsRemaining  Int       @default(3)
-  threadsPurchased  Int       @default(0)
-  agentPrompt       String?   @db.Text
-  preferredModel    String    @default("openai/gpt-4o-mini")
+  id             String   @id
+  name           String
+  email          String   @unique
+  emailVerified  Boolean  @default(false)
+  image          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  role           String   @default("user")
+  coinsBalance   Int      @default(3)
+  coinsPurchased Int      @default(0)
+  agentPrompt    String?  @db.Text
+  preferredModel String   @default("openai/gpt-4o-mini")
 
-  sessions          Session[]
-  accounts          Account[]
-  threads           Thread[]
-  purchases         Purchase[]
+  sessions  Session[]
+  accounts  Account[]
+  threads   Thread[]
+  purchases Purchase[]
 }
 
 model Session {
@@ -83,38 +83,38 @@ enum SubThreadStatus {
 }
 
 model Thread {
-  id                    String        @id @default(cuid())
-  title                 String        @default("New Thread")
-  userId                String
-  user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages              Message[]
-  files                 File[]
-  subThreads            SubThread[]
-  status                ThreadStatus  @default(IDLE)
+  id                   String       @id @default(cuid())
+  title                String       @default("New Thread")
+  userId               String
+  user                 User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages             Message[]
+  files                File[]
+  subThreads           SubThread[]
+  status               ThreadStatus @default(IDLE)
   /// Last chat turn usage (OpenRouter), optional if provider omits usage
-  lastPromptTokens      Int?
-  lastCompletionTokens  Int?
-  lastTotalTokens       Int?
+  lastPromptTokens     Int?
+  lastCompletionTokens Int?
+  lastTotalTokens      Int?
   /// Model context window for last request (from OpenRouter models API)
-  contextLength         Int?
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
-  isArchived            Boolean       @default(false)
+  contextLength        Int?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  isArchived           Boolean      @default(false)
 
   @@index([userId])
 }
 
 model SubAgent {
-  id            String                @id @default(cuid())
-  name          String                @unique
-  instructions  String                @db.Text
-  model         String
-  outputFormat  String
-  createdAt     DateTime              @default(now())
-  updatedAt     DateTime              @updatedAt
-  params        SubAgentParam[]
-  outputParams  SubAgentOutputParam[]
-  subThreads    SubThread[]
+  id           String                @id @default(cuid())
+  name         String                @unique
+  instructions String                @db.Text
+  model        String
+  outputFormat String
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  params       SubAgentParam[]
+  outputParams SubAgentOutputParam[]
+  subThreads   SubThread[]
 }
 
 model SubAgentParam {
@@ -142,24 +142,24 @@ model SubAgentOutputParam {
 }
 
 model SubThread {
-  id                String              @id @default(cuid())
-  threadId          String
-  thread            Thread              @relation(fields: [threadId], references: [id], onDelete: Cascade)
-  subAgentId        String
-  subAgent          SubAgent            @relation(fields: [subAgentId], references: [id], onDelete: Cascade)
-  anchorMessageId   String?
-  anchorMessage     Message?            @relation("SubThreadAnchor", fields: [anchorMessageId], references: [id], onDelete: SetNull)
-  input             Json
-  output            String?             @db.Text
-  status            SubThreadStatus     @default(PENDING)
-  error             String?             @db.Text
-  promptTokens      Int?
-  completionTokens  Int?
-  totalTokens       Int?
-  contextLength     Int?
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  messages          SubThreadMessage[]
+  id               String             @id @default(cuid())
+  threadId         String
+  thread           Thread             @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  subAgentId       String
+  subAgent         SubAgent           @relation(fields: [subAgentId], references: [id], onDelete: Cascade)
+  anchorMessageId  String?
+  anchorMessage    Message?           @relation("SubThreadAnchor", fields: [anchorMessageId], references: [id], onDelete: SetNull)
+  input            Json
+  output           String?            @db.Text
+  status           SubThreadStatus    @default(PENDING)
+  error            String?            @db.Text
+  promptTokens     Int?
+  completionTokens Int?
+  totalTokens      Int?
+  contextLength    Int?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  messages         SubThreadMessage[]
 
   @@index([threadId])
   @@index([subAgentId])
@@ -207,11 +207,29 @@ model File {
 }
 
 model Purchase {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id])
-  stripeId      String   @unique
-  threadsAmount Int
-  amountPaid    Int
-  createdAt     DateTime @default(now())
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  stripeId    String   @unique
+  coinsAmount Int
+  amountPaid  Int
+  createdAt   DateTime @default(now())
+}
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model CoinPackage {
+  id           String   @id @default(cuid())
+  label        String
+  coins        Int
+  priceInCents Int
+  isPopular    Boolean  @default(false)
+  isActive     Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }

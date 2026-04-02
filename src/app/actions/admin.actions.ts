@@ -4,10 +4,10 @@ import { requireAdmin } from "@/lib/guards"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 
-export async function giftThreadsAction(userId: string, additionalThreads: number) {
+export async function giftCoinsAction(userId: string, additionalCoins: number) {
   await requireAdmin()
-  
-  if (additionalThreads <= 0) {
+
+  if (additionalCoins <= 0) {
     return { error: "Amount must be greater than 0" }
   }
 
@@ -15,15 +15,16 @@ export async function giftThreadsAction(userId: string, additionalThreads: numbe
     await prisma.user.update({
       where: { id: userId },
       data: {
-        threadsRemaining: {
-          increment: additionalThreads,
+        coinsBalance: {
+          increment: additionalCoins,
         },
       },
     })
-    
+
     revalidatePath("/dashboard/users")
+    revalidatePath("/dashboard")
     return { success: true }
-  } catch (err) {
-    return { error: "Failed to update user threads" }
+  } catch {
+    return { error: "Failed to update user coins" }
   }
 }

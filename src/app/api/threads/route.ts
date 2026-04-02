@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAuthApi } from "@/lib/guards"
 import { prisma } from "@/lib/prisma"
+import { getThreadPrice } from "@/lib/settings"
 
 export async function GET(request: NextRequest) {
   const { session, error } = await requireAuthApi(request)
   if (error) return error
 
   try {
+    const threadPrice = await getThreadPrice()
     const [threads, user] = await Promise.all([
       prisma.thread.findMany({
         where: {
@@ -26,13 +28,14 @@ export async function GET(request: NextRequest) {
       }),
       prisma.user.findUnique({
         where: { id: session.user.id },
-        select: { threadsRemaining: true },
+        select: { coinsBalance: true },
       }),
     ])
 
     return NextResponse.json({
       threads,
-      threadsRemaining: user?.threadsRemaining ?? 0,
+      coinsBalance: user?.coinsBalance ?? 0,
+      threadPrice,
     })
   } catch {
     return NextResponse.json(
@@ -47,14 +50,20 @@ export async function POST(request: NextRequest) {
   if (error) return error
 
   try {
+    const threadPrice = await getThreadPrice()
+
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { threadsRemaining: true },
+      select: { coinsBalance: true },
     })
 
-    if (!user || user.threadsRemaining <= 0) {
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
+
+    if (user.coinsBalance < threadPrice) {
       return NextResponse.json(
-        { error: "No threads remaining" },
+        { error: "Not enough coins" },
         { status: 403 }
       )
     }
@@ -69,7 +78,7 @@ export async function POST(request: NextRequest) {
 
       await tx.user.update({
         where: { id: session.user.id },
-        data: { threadsRemaining: { decrement: 1 } },
+        data: { coinsBalance: { decrement: threadPrice } },
       })
 
       return newThread

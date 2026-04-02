@@ -12,23 +12,25 @@ export default async function DashboardUsersPage() {
       name: true,
       email: true,
       role: true,
-      threadsRemaining: true,
-      threadsPurchased: true,
+      coinsBalance: true,
+      coinsPurchased: true,
       createdAt: true,
     },
   })
 
-  // Calculate some stats globally instead of for single user
   const totalUsers = users.length
-  const totalThreadsPurchased = users.reduce((acc: number, user: any) => acc + user.threadsPurchased, 0)
-  const totalThreadsRemaining = users.reduce((acc: number, user: any) => acc + user.threadsRemaining, 0)
+  const totalCoinsPurchased = users.reduce(
+    (acc, u) => acc + u.coinsPurchased,
+    0
+  )
+  const totalCoinsBalance = users.reduce((acc, u) => acc + u.coinsBalance, 0)
 
   return (
     <div className="space-y-8">
       <div>
         <h2 className="text-xl font-semibold tracking-tight">Users Management</h2>
         <p className="text-sm text-muted-foreground">
-          View all registered users and manage their thread balances natively.
+          View all registered users and manage their coin balances.
         </p>
       </div>
 
@@ -41,15 +43,15 @@ export default async function DashboardUsersPage() {
         </div>
         <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6">
           <h3 className="tracking-tight text-sm font-medium text-muted-foreground">
-            Total Threads Purchased
+            Total Coins Purchased
           </h3>
-          <div className="text-2xl font-bold mt-2">{totalThreadsPurchased}</div>
+          <div className="text-2xl font-bold mt-2">{totalCoinsPurchased}</div>
         </div>
         <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6">
           <h3 className="tracking-tight text-sm font-medium text-muted-foreground">
-            System Threads Remaining
+            System Coin Balances
           </h3>
-          <div className="text-2xl font-bold mt-2">{totalThreadsRemaining}</div>
+          <div className="text-2xl font-bold mt-2">{totalCoinsBalance}</div>
         </div>
       </div>
 

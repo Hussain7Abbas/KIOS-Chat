@@ -39,13 +39,13 @@ import Link from "next/link"
 interface ThreadSidebarProps {
   collapsed?: boolean
   onCollapseToggle?: () => void
-  onOpenBuyThreads: () => void
+  onOpenBuyCoins: () => void
 }
 
 export function ThreadSidebar({
   collapsed = false,
   onCollapseToggle,
-  onOpenBuyThreads,
+  onOpenBuyCoins,
 }: ThreadSidebarProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -56,11 +56,20 @@ export function ThreadSidebar({
   const [showQuotaDialog, setShowQuotaDialog] = useState(false)
 
   const threads = threadsData?.threads ?? []
-  const threadsRemaining = threadsData?.threadsRemaining ?? (session?.user as { threadsRemaining?: number })?.threadsRemaining ?? 0
-  const isAdmin = (session?.user as any)?.role === "admin"
+  const coinsBalance =
+    threadsData?.coinsBalance ??
+    (session?.user as { coinsBalance?: number })?.coinsBalance ??
+    0
+  const threadPrice = threadsData?.threadPrice ?? 1
+  const isAdmin = (session?.user as { role?: string })?.role === "admin"
+
+  const lowOnCoins =
+    threadPrice > 0 &&
+    coinsBalance > 0 &&
+    coinsBalance < threadPrice
 
   const handleNewThread = async () => {
-    if (threadsRemaining <= 0) {
+    if (threadPrice > 0 && coinsBalance < threadPrice) {
       setShowQuotaDialog(true)
       return
     }
@@ -118,10 +127,10 @@ export function ThreadSidebar({
               </div>
               <div className="flex items-center gap-1">
                 <Badge
-                  variant={threadsRemaining <= 1 ? "destructive" : "secondary"}
+                  variant={lowOnCoins || coinsBalance <= 0 ? "destructive" : "secondary"}
                   className="text-xs"
                 >
-                  {threadsRemaining} left
+                  {coinsBalance} coins
                 </Badge>
                 {onCollapseToggle && (
                   <Button
@@ -228,10 +237,10 @@ export function ThreadSidebar({
               )}
               {isAdmin && <DropdownMenuSeparator />}
               <DropdownMenuItem
-                onClick={() => onOpenBuyThreads()}
+                onClick={() => onOpenBuyCoins()}
               >
                 <ShoppingCart className="mr-2 h-4 w-4" />
-                Buy Threads
+                Buy coins
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -250,10 +259,10 @@ export function ThreadSidebar({
       <Dialog open={showQuotaDialog} onOpenChange={setShowQuotaDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>No Threads Remaining</DialogTitle>
+            <DialogTitle>Not enough coins</DialogTitle>
             <DialogDescription>
-              You&apos;ve used all your available threads. Purchase more to
-              continue creating conversations.
+              You need at least {threadPrice} coin{threadPrice === 1 ? "" : "s"} to create a new thread.
+              Purchase more coins to continue.
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-2 pt-4">
@@ -266,10 +275,10 @@ export function ThreadSidebar({
             <Button
               onClick={() => {
                 setShowQuotaDialog(false)
-                onOpenBuyThreads()
+                onOpenBuyCoins()
               }}
             >
-              Buy Threads
+              Buy coins
             </Button>
           </div>
         </DialogContent>

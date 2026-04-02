@@ -14,7 +14,7 @@ export function DashboardNav() {
 
   return (
     <Tabs value={currentTab} className="w-full">
-      <TabsList className="grid w-full grid-cols-3 max-w-md bg-muted/50 border border-border/50">
+      <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 max-w-2xl bg-muted/50 border border-border/50">
         <TabsTrigger value="overview" render={<Link href="/dashboard" />}>
           Overview
         </TabsTrigger>
@@ -23,6 +23,9 @@ export function DashboardNav() {
         </TabsTrigger>
         <TabsTrigger value="users" render={<Link href="/dashboard/users" />}>
           Users
+        </TabsTrigger>
+        <TabsTrigger value="pricing" render={<Link href="/dashboard/pricing" />}>
+          Pricing
         </TabsTrigger>
       </TabsList>
     </Tabs>

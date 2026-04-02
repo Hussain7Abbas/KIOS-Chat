@@ -4,6 +4,7 @@ import { requireAuth } from "@/lib/guards"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
+import { getThreadPrice } from "@/lib/settings"
 
 export async function createThreadAction(): Promise<{
   id?: string
@@ -11,13 +12,15 @@ export async function createThreadAction(): Promise<{
 }> {
   const session = await requireAuth()
 
+  const threadPrice = await getThreadPrice()
+
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { threadsRemaining: true },
+    select: { coinsBalance: true },
   })
 
-  if (!user || user.threadsRemaining <= 0) {
-    return { error: "No threads remaining. Purchase more to continue." }
+  if (!user || user.coinsBalance < threadPrice) {
+    return { error: "Not enough coins. Purchase more to continue." }
   }
 
   try {
@@ -31,7 +34,7 @@ export async function createThreadAction(): Promise<{
 
       await tx.user.update({
         where: { id: session.user.id },
-        data: { threadsRemaining: { decrement: 1 } },
+        data: { coinsBalance: { decrement: threadPrice } },
       })
 
       return newThread

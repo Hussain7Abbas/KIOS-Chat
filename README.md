@@ -208,9 +208,9 @@ Put the printed signing secret into `.env` as `STRIPE_WEBHOOK_SECRET`.
 
 ## Business logic (short)
 
-### Thread quota
+### Coins & pricing
 
-New users get a starting thread allowance. Creating a thread decrements it. At zero, new threads are blocked until quota is purchased via Stripe; a verified webhook increments `threadsRemaining`.
+New users start with a **coin balance** (default 3). Creating a thread costs a configurable number of coins (admin **Settings → Pricing**). At zero coins (when the thread price is > 0), new threads are blocked until coins are added via **Stripe** coin packages or **admin gift**. A verified Stripe webhook credits `coinsBalance` and records `coinsPurchased`.
 
 ### Main agent & sub-agents
 

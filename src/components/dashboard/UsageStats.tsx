@@ -1,10 +1,9 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { MessageSquare, ShoppingCart, Crown } from "lucide-react"
+import { MessageSquare, ShoppingCart, Crown, Coins } from "lucide-react"
 
 interface UsageStatsProps {
   user: {
@@ -12,16 +11,12 @@ interface UsageStatsProps {
     email: string
     image?: string | null
     role: string
-    threadsRemaining: number
-    threadsPurchased: number
+    coinsBalance: number
+    coinsPurchased: number
   }
 }
 
 export function UsageStats({ user }: UsageStatsProps) {
-  const totalThreads = 3 + user.threadsPurchased
-  const usedThreads = totalThreads - user.threadsRemaining
-  const usagePercentage = Math.min((usedThreads / totalThreads) * 100, 100)
-
   const initials = user.name
     .split(" ")
     .map((n) => n[0])
@@ -51,26 +46,24 @@ export function UsageStats({ user }: UsageStatsProps) {
         </CardContent>
       </Card>
 
-      {/* Usage Card */}
+      {/* Coins balance */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
-            <MessageSquare className="h-4 w-4" />
-            Thread Usage
+            <Coins className="h-4 w-4" />
+            Coin balance
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <Progress value={usagePercentage} className="h-2" />
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">
-              {usedThreads} of {totalThreads} used
-            </span>
-            <Badge
-              variant={user.threadsRemaining <= 1 ? "destructive" : "secondary"}
-            >
-              {user.threadsRemaining} remaining
-            </Badge>
-          </div>
+        <CardContent className="space-y-2">
+          <div className="text-3xl font-bold">{user.coinsBalance}</div>
+          <p className="text-sm text-muted-foreground">
+            Coins available to spend on threads and future services
+          </p>
+          <Badge
+            variant={user.coinsBalance <= 0 ? "destructive" : "secondary"}
+          >
+            {user.coinsBalance} coins
+          </Badge>
         </CardContent>
       </Card>
 
@@ -79,13 +72,14 @@ export function UsageStats({ user }: UsageStatsProps) {
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <ShoppingCart className="h-4 w-4" />
-            Total Purchased
+            Total purchased
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-3xl font-bold">{user.threadsPurchased}</div>
-          <p className="text-sm text-muted-foreground mt-1">
-            threads purchased all-time
+          <div className="text-3xl font-bold">{user.coinsPurchased}</div>
+          <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
+            <MessageSquare className="h-3 w-3" />
+            coins purchased all-time (via Stripe)
           </p>
         </CardContent>
       </Card>

@@ -1,18 +1,24 @@
 "use client"
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { toast } from "sonner"
 import type { ThreadData } from "@/types"
 
 interface ThreadsResponse {
   threads: ThreadData[]
-  threadsRemaining: number
+  coinsBalance: number
+  threadPrice: number
 }
 
 async function fetchThreads(): Promise<ThreadsResponse> {
   const res = await fetch("/api/threads")
   if (!res.ok) throw new Error("Failed to fetch threads")
   const data = await res.json()
-  return { threads: data.threads, threadsRemaining: data.threadsRemaining ?? 0 }
+  return {
+    threads: data.threads,
+    coinsBalance: data.coinsBalance ?? 0,
+    threadPrice: data.threadPrice ?? 1,
+  }
 }
 
 async function createThread(): Promise<ThreadData> {
@@ -59,6 +65,9 @@ export function useCreateThread() {
     mutationFn: createThread,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["threads"] })
+    },
+    onError: (err: Error) => {
+      toast.error(err.message)
     },
   })
 }

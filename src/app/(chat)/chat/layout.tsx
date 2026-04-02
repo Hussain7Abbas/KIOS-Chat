@@ -1,7 +1,7 @@
 "use client"
 
 import { ThreadSidebar } from "@/components/chat/ThreadSidebar"
-import { BuyThreadsModal } from "@/components/dashboard/BuyThreadsModal"
+import { BuyCoinsModal } from "@/components/dashboard/BuyCoinsModal"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { Menu } from "lucide-react"
@@ -16,16 +16,18 @@ export default function ChatLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
-  const [buyThreadsOpen, setBuyThreadsOpen] = useState(false)
+  const [buyCoinsOpen, setBuyCoinsOpen] = useState(false)
 
-  const openBuyThreads = useCallback(() => {
-    setBuyThreadsOpen(true)
+  const openBuyCoins = useCallback(() => {
+    setBuyCoinsOpen(true)
   }, [])
 
   useEffect(() => {
     const stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY)
     if (stored !== null) {
-      setCollapsed(stored === "true")
+      queueMicrotask(() => {
+        setCollapsed(stored === "true")
+      })
     }
   }, [])
 
@@ -48,7 +50,7 @@ export default function ChatLayout({
         <ThreadSidebar
           collapsed={collapsed}
           onCollapseToggle={toggleCollapsed}
-          onOpenBuyThreads={openBuyThreads}
+          onOpenBuyCoins={openBuyCoins}
         />
       </aside>
 
@@ -63,12 +65,12 @@ export default function ChatLayout({
           <ThreadSidebar
             collapsed={false}
             onCollapseToggle={() => {}}
-            onOpenBuyThreads={openBuyThreads}
+            onOpenBuyCoins={openBuyCoins}
           />
         </SheetContent>
       </Sheet>
 
-      <BuyThreadsModal open={buyThreadsOpen} onOpenChange={setBuyThreadsOpen} />
+      <BuyCoinsModal open={buyCoinsOpen} onOpenChange={setBuyCoinsOpen} />
 
       {/* Main Content */}
       <main className="flex-1 overflow-hidden">{children}</main>

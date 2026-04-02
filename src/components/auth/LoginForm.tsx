@@ -13,13 +13,25 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { Loader2, Facebook } from "lucide-react"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group"
+import { Loader2, Facebook, Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { SEED_USERS } from "@/lib/seed-credentials"
+
+const showDevSeedLogin = process.env.NODE_ENV !== "production"
 
 export function LoginForm() {
   const [isPending, setIsPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showPassword, setShowPassword] = useState(false)
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
   const router = useRouter()
 
   const handleSocialLogin = async (provider: "google" | "facebook") => {
@@ -32,10 +44,6 @@ export function LoginForm() {
     e.preventDefault()
     setIsPending(true)
     setError(null)
-
-    const formData = new FormData(e.currentTarget)
-    const email = formData.get("email") as string
-    const password = formData.get("password") as string
 
     const res = await signIn.email({
       email,
@@ -100,6 +108,35 @@ export function LoginForm() {
           </Button>
         </div>
 
+        {showDevSeedLogin && (
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full font-mono text-xs"
+              disabled={isPending}
+              onClick={() => {
+                setEmail(SEED_USERS.root.email)
+                setPassword(SEED_USERS.root.password)
+              }}
+            >
+              root
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full font-mono text-xs"
+              disabled={isPending}
+              onClick={() => {
+                setEmail(SEED_USERS.user.email)
+                setPassword(SEED_USERS.user.password)
+              }}
+            >
+              user
+            </Button>
+          </div>
+        )}
+
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
             <Separator className="w-full" />
@@ -125,6 +162,8 @@ export function LoginForm() {
               id="email"
               name="email"
               type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               required
               autoComplete="email"
@@ -134,15 +173,35 @@ export function LoginForm() {
 
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              placeholder="••••••••"
-              required
-              autoComplete="current-password"
-              disabled={isPending}
-            />
+            <InputGroup className="border-input">
+              <InputGroupInput
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                autoComplete="current-password"
+                disabled={isPending}
+              />
+              <InputGroupAddon align="inline-end">
+                <InputGroupButton
+                  type="button"
+                  size="icon-xs"
+                  variant="ghost"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
+                >
+                  {showPassword ? (
+                    <EyeOff className="size-4" />
+                  ) : (
+                    <Eye className="size-4" />
+                  )}
+                </InputGroupButton>
+              </InputGroupAddon>
+            </InputGroup>
           </div>
 
           <Button type="submit" className="w-full" disabled={isPending}>

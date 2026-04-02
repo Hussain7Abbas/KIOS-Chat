@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAuthApi } from "@/lib/guards"
-import { createCheckoutSession, THREAD_PACKAGES } from "@/lib/stripe"
-import { purchaseThreadsSchema } from "@/lib/validators"
+import { createCheckoutSession } from "@/lib/stripe"
+import { purchaseCoinsSchema } from "@/lib/validators"
 
 export async function POST(request: NextRequest) {
   const { session, error } = await requireAuthApi(request)
@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const parsed = purchaseThreadsSchema.safeParse(body)
+    const parsed = purchaseCoinsSchema.safeParse(body)
 
     if (!parsed.success) {
       return NextResponse.json(
@@ -21,8 +21,7 @@ export async function POST(request: NextRequest) {
     const checkoutUrl = await createCheckoutSession({
       userId: session.user.id,
       userEmail: session.user.email,
-      packageIndex: parsed.data.packageIndex,
-      // redirect back to chat
+      coinPackageId: parsed.data.coinPackageId,
       returnUrl: `${process.env.NEXT_PUBLIC_APP_URL}/chat`,
     })
 

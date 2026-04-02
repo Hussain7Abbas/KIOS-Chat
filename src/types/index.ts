@@ -91,9 +91,26 @@ export interface FileAttachment {
 export interface PurchaseData {
   id: string
   stripeId: string
-  threadsAmount: number
+  coinsAmount: number
   amountPaid: number
   createdAt: Date | string
+}
+
+export interface CoinPackageData {
+  id: string
+  label: string
+  coins: number
+  priceInCents: number
+  isPopular: boolean
+  isActive: boolean
+  sortOrder: number
+  createdAt: Date | string
+  updatedAt: Date | string
+}
+
+export interface ServicePricingResponse {
+  threadPrice: number
+  coinPackages: CoinPackageData[]
 }
 
 export interface UserProfile {
@@ -102,8 +119,8 @@ export interface UserProfile {
   email: string
   image?: string | null
   role: string
-  threadsRemaining: number
-  threadsPurchased: number
+  coinsBalance: number
+  coinsPurchased: number
   agentPrompt?: string | null
   preferredModel: string
 }
