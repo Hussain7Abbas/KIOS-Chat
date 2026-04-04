@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { signUp, signIn } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,6 +19,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 
 export function RegisterForm() {
+  const { t } = useTranslation()
   const [isPending, setIsPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -40,13 +42,13 @@ export function RegisterForm() {
     const confirmPassword = formData.get("confirmPassword") as string
 
     if (!name || !email || !password || !confirmPassword) {
-      setError("Please fill out all fields")
+      setError(t("auth.fill-all-fields"))
       setIsPending(false)
       return
     }
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match")
+      setError(t("auth.passwords-no-match"))
       setIsPending(false)
       return
     }
@@ -58,7 +60,7 @@ export function RegisterForm() {
     })
 
     if (res?.error) {
-      setError(res.error.message || "Something went wrong")
+      setError(res.error.message || t("auth.something-wrong"))
       setIsPending(false)
     } else {
       router.push("/chat")
@@ -69,12 +71,11 @@ export function RegisterForm() {
     <Card className="w-full max-w-md border-border/50 bg-card/80 backdrop-blur-sm">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl font-bold bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">
-          Create Account
+          {t("auth.create-account")}
         </CardTitle>
-        <CardDescription>Join KIOS Chat today</CardDescription>
+        <CardDescription>{t("auth.join-today")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* OAuth Buttons */}
         <div className="grid grid-cols-2 gap-3">
           <Button
             variant="outline"
@@ -83,7 +84,7 @@ export function RegisterForm() {
             type="button"
             disabled={isPending}
           >
-            <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+            <svg className="me-2 h-4 w-4" viewBox="0 0 24 24">
               <path
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
                 fill="#4285F4"
@@ -101,7 +102,7 @@ export function RegisterForm() {
                 fill="#EA4335"
               />
             </svg>
-            Google
+            {t("auth.google")}
           </Button>
           <Button
             variant="outline"
@@ -110,8 +111,8 @@ export function RegisterForm() {
             type="button"
             disabled={isPending}
           >
-            <Facebook className="mr-2 h-4 w-4" />
-            Facebook
+            <Facebook className="me-2 h-4 w-4" />
+            {t("auth.facebook")}
           </Button>
         </div>
 
@@ -121,12 +122,11 @@ export function RegisterForm() {
           </div>
           <div className="relative flex justify-center text-xs uppercase">
             <span className="bg-card px-2 text-muted-foreground">
-              Or continue with email
+              {t("auth.or-continue-email")}
             </span>
           </div>
         </div>
 
-        {/* Email/Password Form */}
         <form onSubmit={handleEmailRegister} className="space-y-4">
           {error && (
             <p className="text-sm text-destructive text-center bg-destructive/10 py-2 px-3 rounded-md">
@@ -135,23 +135,23 @@ export function RegisterForm() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="name">Full Name</Label>
+            <Label htmlFor="name">{t("auth.full-name")}</Label>
             <Input
               id="name"
               name="name"
-              placeholder="John Doe"
+              placeholder={t("auth.name-placeholder")}
               required
               disabled={isPending}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t("auth.email")}</Label>
             <Input
               id="email"
               name="email"
               type="email"
-              placeholder="you@example.com"
+              placeholder={t("auth.email-placeholder")}
               required
               autoComplete="email"
               disabled={isPending}
@@ -159,12 +159,12 @@ export function RegisterForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t("auth.password")}</Label>
             <Input
               id="password"
               name="password"
               type="password"
-              placeholder="••••••••"
+              placeholder={t("auth.password-placeholder")}
               required
               autoComplete="new-password"
               disabled={isPending}
@@ -172,12 +172,12 @@ export function RegisterForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <Label htmlFor="confirmPassword">{t("auth.confirm-password")}</Label>
             <Input
               id="confirmPassword"
               name="confirmPassword"
               type="password"
-              placeholder="••••••••"
+              placeholder={t("auth.password-placeholder")}
               required
               autoComplete="new-password"
               disabled={isPending}
@@ -185,18 +185,18 @@ export function RegisterForm() {
           </div>
 
           <Button type="submit" className="w-full" disabled={isPending}>
-            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Create Account
+            {isPending && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+            {t("auth.create-account-btn")}
           </Button>
         </form>
 
         <p className="text-center text-sm text-muted-foreground">
-          Already have an account?{" "}
+          {t("auth.have-account")}{" "}
           <Link
             href="/login"
             className="text-primary underline-offset-4 hover:underline"
           >
-            Sign in
+            {t("auth.sign-in-link")}
           </Link>
         </p>
       </CardContent>

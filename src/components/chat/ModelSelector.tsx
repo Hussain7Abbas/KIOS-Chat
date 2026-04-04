@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
+import { useTranslation } from "react-i18next"
 import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import {
@@ -23,15 +24,6 @@ import {
   findChatModelName,
   type ChatModelsByProvider,
 } from "@/lib/chatModelsCatalog"
-
-const MODEL_GROUPS: {
-  key: keyof ChatModelsByProvider
-  heading: string
-}[] = [
-  { key: "openai", heading: "OpenAI (GPT)" },
-  { key: "anthropic", heading: "Anthropic (Claude)" },
-  { key: "google", heading: "Google" },
-]
 
 async function fetchChatModels(): Promise<ChatModelsByProvider> {
   const res = await fetch("/api/models", { credentials: "include" })
@@ -59,7 +51,18 @@ export function ModelSelector({
   inModal = false,
   className,
 }: ModelSelectorProps) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
+
+  const modelGroups = useMemo(
+    () =>
+      [
+        { key: "openai" as const, headingKey: "chat.models-group-openai" },
+        { key: "anthropic" as const, headingKey: "chat.models-group-anthropic" },
+        { key: "google" as const, headingKey: "chat.models-group-google" },
+      ] as const,
+    [],
+  )
 
   const { data, isPending, isError } = useQuery({
     queryKey: ["openrouter-chat-models"],
@@ -74,7 +77,7 @@ export function ModelSelector({
   const displayName =
     findChatModelName(catalog, value) ??
     value.split("/").pop() ??
-    "Select model"
+    t("chat.select-model")
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -88,7 +91,7 @@ export function ModelSelector({
             className={cn("w-[200px] justify-between text-sm", className)}
           >
             <span className="truncate">{displayName}</span>
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            <ChevronsUpDown className="ms-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         }
       />
@@ -99,18 +102,18 @@ export function ModelSelector({
       >
         {isPending ? (
           <p className="px-3 py-2 text-xs text-muted-foreground">
-            Loading full catalog from OpenRouter…
+            {t("chat.models-loading-catalog")}
           </p>
         ) : null}
         <Command>
-          <CommandInput placeholder="Search models…" />
+          <CommandInput placeholder={t("chat.models-search")} />
           <CommandList className="max-h-[min(60vh,420px)]">
-            <CommandEmpty>No model found.</CommandEmpty>
-            {MODEL_GROUPS.map(({ key, heading }) => {
+            <CommandEmpty>{t("chat.models-empty")}</CommandEmpty>
+            {modelGroups.map(({ key, headingKey }) => {
               const models = catalog[key]
               if (models.length === 0) return null
               return (
-                <CommandGroup key={key} heading={heading}>
+                <CommandGroup key={key} heading={t(headingKey)}>
                   {models.map((model) => (
                     <CommandItem
                       key={model.id}
@@ -122,7 +125,7 @@ export function ModelSelector({
                     >
                       <Check
                         className={cn(
-                          "mr-2 h-4 w-4 shrink-0",
+                          "me-2 h-4 w-4 shrink-0",
                           value === model.id ? "opacity-100" : "opacity-0",
                         )}
                       />

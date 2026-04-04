@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { MessageSquare, ShoppingCart, Crown, Coins } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 interface UsageStatsProps {
   user: {
@@ -17,6 +18,7 @@ interface UsageStatsProps {
 }
 
 export function UsageStats({ user }: UsageStatsProps) {
+  const { t } = useTranslation()
   const initials = user.name
     .split(" ")
     .map((n) => n[0])
@@ -26,7 +28,6 @@ export function UsageStats({ user }: UsageStatsProps) {
 
   return (
     <div className="grid gap-4 md:grid-cols-3">
-      {/* Profile Card */}
       <Card>
         <CardHeader className="flex flex-row items-center gap-4 pb-2">
           <Avatar className="h-12 w-12">
@@ -46,40 +47,38 @@ export function UsageStats({ user }: UsageStatsProps) {
         </CardContent>
       </Card>
 
-      {/* Coins balance */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <Coins className="h-4 w-4" />
-            Coin balance
+            {t("usage.coin-balance")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="text-3xl font-bold">{user.coinsBalance}</div>
           <p className="text-sm text-muted-foreground">
-            Coins available to spend on threads and future services
+            {t("usage.coin-balance-desc")}
           </p>
           <Badge
             variant={user.coinsBalance <= 0 ? "destructive" : "secondary"}
           >
-            {user.coinsBalance} coins
+            {user.coinsBalance} {t("common.coins")}
           </Badge>
         </CardContent>
       </Card>
 
-      {/* Purchases Card */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <ShoppingCart className="h-4 w-4" />
-            Total purchased
+            {t("usage.total-purchased")}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-3xl font-bold">{user.coinsPurchased}</div>
           <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
             <MessageSquare className="h-3 w-3" />
-            coins purchased all-time (via Stripe)
+            {t("usage.total-purchased-desc")}
           </p>
         </CardContent>
       </Card>

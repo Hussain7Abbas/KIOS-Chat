@@ -1,8 +1,10 @@
 import type { Metadata } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
+import { Geist, Geist_Mono, Noto_Sans_Arabic } from "next/font/google"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import { Toaster } from "@/components/ui/sonner"
+import { AppToaster } from "@/components/AppToaster"
 import { QueryProvider } from "@/components/providers/QueryProvider"
+import { I18nProvider } from "@/components/providers/I18nProvider"
+import { defaultLocale } from "@/i18n/config"
 import "./globals.css"
 
 const geistSans = Geist({
@@ -15,10 +17,15 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 })
 
+const notoArabic = Noto_Sans_Arabic({
+  variable: "--font-arabic",
+  subsets: ["arabic"],
+})
+
 export const metadata: Metadata = {
-  title: "KIOS Chat — AI-Powered Chat Platform",
+  title: "KIOS Chat — منصة دردشة بالذكاء الاصطناعي",
   description:
-    "A modern AI chat platform powered by multiple language models. Create conversations, customize your AI agent, and more.",
+    "منصة دردشة حديثة مدعومة بعدة نماذج لغوية. أنشئ المحادثات وخصص وكيلك الذكي والمزيد.",
 }
 
 export default function RootLayout({
@@ -28,15 +35,19 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} dark h-full antialiased`}
+      lang={defaultLocale}
+      dir="rtl"
+      className={`${geistSans.variable} ${geistMono.variable} ${notoArabic.variable} dark h-full antialiased`}
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <QueryProvider>
-          <TooltipProvider delay={300}>
-            {children}
-            <Toaster richColors position="bottom-right" />
-          </TooltipProvider>
+          <I18nProvider>
+            <TooltipProvider delay={300}>
+              {children}
+              <AppToaster />
+            </TooltipProvider>
+          </I18nProvider>
         </QueryProvider>
       </body>
     </html>

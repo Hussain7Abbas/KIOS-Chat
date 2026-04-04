@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { InstructionContextLimitLines } from "@/components/dashboard/InstructionContextLimitLines"
 import { useInstructionContextLimit } from "@/hooks/useInstructionContextLimit"
 import { createSubAgentSchema } from "@/lib/validators"
@@ -62,9 +63,9 @@ function emptyOutputParamRow(): OutputParamRow {
 }
 
 function normalizeParamType(
-  t: string
+  raw: string,
 ): "string" | "number" | "boolean" {
-  if (t === "number" || t === "boolean") return t
+  if (raw === "number" || raw === "boolean") return raw
   return "string"
 }
 
@@ -75,6 +76,7 @@ interface SubAgentFormProps {
 }
 
 export function SubAgentForm({ open, onOpenChange, editing }: SubAgentFormProps) {
+  const { t } = useTranslation()
   const createMut = useCreateSubAgent()
   const updateMut = useUpdateSubAgent()
 
@@ -168,7 +170,7 @@ export function SubAgentForm({ open, onOpenChange, editing }: SubAgentFormProps)
     const parsed = createSubAgentSchema.safeParse(payload)
     if (!parsed.success) {
       const first = Object.values(parsed.error.flatten().fieldErrors)[0]?.[0]
-      toast.error(first ?? "Invalid form")
+      toast.error(first ? t(first) : t("subagent.invalid-form"))
       return
     }
 
@@ -178,15 +180,15 @@ export function SubAgentForm({ open, onOpenChange, editing }: SubAgentFormProps)
           id: editing.id,
           payload: parsed.data,
         })
-        toast.success("Sub-agent updated")
+        toast.success(t("subagent.updated"))
       } else {
         await createMut.mutateAsync(parsed.data)
-        toast.success("Sub-agent created")
+        toast.success(t("subagent.created"))
       }
       onOpenChange(false)
     } catch (err) {
       console.error("[SubAgentForm] save failed", err)
-      toast.error(err instanceof Error ? err.message : "Request failed")
+      toast.error(err instanceof Error ? err.message : t("subagent.request-failed"))
     }
   }
 
@@ -198,29 +200,28 @@ export function SubAgentForm({ open, onOpenChange, editing }: SubAgentFormProps)
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>
-              {editing ? "Edit sub-agent" : "New sub-agent"}
+              {editing ? t("subagent.form-edit") : t("subagent.form-new")}
             </DialogTitle>
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="subagent-name">Tool name</Label>
+              <Label htmlFor="subagent-name">{t("subagent.tool-name")}</Label>
               <Input
                 id="subagent-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Translator"
+                placeholder={t("subagent.tool-name-placeholder")}
                 disabled={!!editing}
                 required
               />
               <p className="text-xs text-muted-foreground">
-                Used as the function name the main agent calls. Cannot be
-                changed after creation.
+                {t("subagent.tool-name-hint")}
               </p>
             </div>
 
             <div className="grid gap-2">
-              <Label>Model</Label>
+              <Label>{t("subagent.form-model-label")}</Label>
               <ModelSelector
                 value={model}
                 onChange={setModel}
@@ -230,10 +231,9 @@ export function SubAgentForm({ open, onOpenChange, editing }: SubAgentFormProps)
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="subagent-instructions">Instructions</Label>
+              <Label htmlFor="subagent-instructions">{t("subagent.instructions")}</Label>
               <p className="text-xs text-muted-foreground">
-                Max length follows this sub-agent&apos;s model context from
-                OpenRouter (estimate; space reserved for the tool run).
+                {t("subagent.form-instructions-hint")}
               </p>
               <Textarea
                 id="subagent-instructions"
@@ -257,20 +257,20 @@ export function SubAgentForm({ open, onOpenChange, editing }: SubAgentFormProps)
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>Input parameters (tool arguments)</Label>
+                <Label>{t("subagent.input-params-section")}</Label>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={addParam}
                 >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add input
+                  <Plus className="h-4 w-4 me-1" />
+                  {t("subagent.add-input")}
                 </Button>
               </div>
               {params.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  No input parameters — the tool accepts an empty object.
+                  {t("subagent.no-input-params")}
                 </p>
               ) : (
                 <div className="space-y-3 rounded-lg border border-border p-3">
@@ -281,7 +281,7 @@ export function SubAgentForm({ open, onOpenChange, editing }: SubAgentFormProps)
                     >
                       <div className="flex gap-2 items-end">
                         <div className="flex-1 grid gap-1">
-                          <Label className="text-xs">Name</Label>
+                          <Label className="text-xs">{t("subagent.param-name")}</Label>
                           <Input
                             value={row.name}
                             onChange={(e) =>
@@ -291,7 +291,7 @@ export function SubAgentForm({ open, onOpenChange, editing }: SubAgentFormProps)
                           />
                         </div>
                         <div className="w-28 grid gap-1">
-                          <Label className="text-xs">Type</Label>
+                          <Label className="text-xs">{t("subagent.param-type")}</Label>
                           <select
                             className="h-8 w-full rounded-lg border border-input bg-transparent px-2 text-sm"
                             value={row.type}
@@ -312,13 +312,13 @@ export function SubAgentForm({ open, onOpenChange, editing }: SubAgentFormProps)
                           size="icon"
                           className="shrink-0"
                           onClick={() => removeParam(row.key)}
-                          aria-label="Remove input parameter"
+                          aria-label={t("subagent.remove-input-aria")}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                       <div className="grid gap-1">
-                        <Label className="text-xs">Description</Label>
+                        <Label className="text-xs">{t("subagent.param-description")}</Label>
                         <Input
                           value={row.description}
                           onChange={(e) =>
@@ -340,7 +340,7 @@ export function SubAgentForm({ open, onOpenChange, editing }: SubAgentFormProps)
                             })
                           }
                         />
-                        Required
+                        {t("subagent.param-required")}
                       </label>
                     </div>
                   ))}
@@ -349,10 +349,9 @@ export function SubAgentForm({ open, onOpenChange, editing }: SubAgentFormProps)
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="subagent-response-format">Response format</Label>
+              <Label htmlFor="subagent-response-format">{t("subagent.response-format-label")}</Label>
               <p className="text-xs text-muted-foreground -mt-1">
-                How the sub-agent should format its reply (plain text, Markdown,
-                or JSON).
+                {t("subagent.response-format-hint")}
               </p>
               <select
                 id="subagent-response-format"
@@ -362,19 +361,18 @@ export function SubAgentForm({ open, onOpenChange, editing }: SubAgentFormProps)
                   setOutputFormat(e.target.value as typeof outputFormat)
                 }
               >
-                <option value="text">Plain text</option>
-                <option value="markdown">Markdown</option>
-                <option value="json">JSON</option>
+                <option value="text">{t("subagent.format-plain")}</option>
+                <option value="markdown">{t("subagent.format-markdown")}</option>
+                <option value="json">{t("subagent.format-json")}</option>
               </select>
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <Label>Output fields (expected response shape)</Label>
+                  <Label>{t("subagent.output-fields-title")}</Label>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Optional. Describe fields the sub-agent should include in its
-                    output (added to the system prompt).
+                    {t("subagent.output-fields-hint")}
                   </p>
                 </div>
                 <Button
@@ -384,14 +382,13 @@ export function SubAgentForm({ open, onOpenChange, editing }: SubAgentFormProps)
                   className="shrink-0"
                   onClick={addOutputParam}
                 >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add output
+                  <Plus className="h-4 w-4 me-1" />
+                  {t("subagent.add-output")}
                 </Button>
               </div>
               {outputParams.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  No structured output fields — only the response format above
-                  applies.
+                  {t("subagent.no-output-fields")}
                 </p>
               ) : (
                 <div className="space-y-3 rounded-lg border border-border p-3">
@@ -402,7 +399,7 @@ export function SubAgentForm({ open, onOpenChange, editing }: SubAgentFormProps)
                     >
                       <div className="flex gap-2 items-end">
                         <div className="flex-1 grid gap-1">
-                          <Label className="text-xs">Field name</Label>
+                          <Label className="text-xs">{t("subagent.field-name-label")}</Label>
                           <Input
                             value={row.name}
                             onChange={(e) =>
@@ -414,7 +411,7 @@ export function SubAgentForm({ open, onOpenChange, editing }: SubAgentFormProps)
                           />
                         </div>
                         <div className="w-28 grid gap-1">
-                          <Label className="text-xs">Type</Label>
+                          <Label className="text-xs">{t("subagent.param-type")}</Label>
                           <select
                             className="h-8 w-full rounded-lg border border-input bg-transparent px-2 text-sm"
                             value={row.type}
@@ -435,13 +432,13 @@ export function SubAgentForm({ open, onOpenChange, editing }: SubAgentFormProps)
                           size="icon"
                           className="shrink-0"
                           onClick={() => removeOutputParam(row.key)}
-                          aria-label="Remove output field"
+                          aria-label={t("subagent.remove-output-aria")}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                       <div className="grid gap-1">
-                        <Label className="text-xs">Description</Label>
+                        <Label className="text-xs">{t("subagent.param-description")}</Label>
                         <Input
                           value={row.description}
                           onChange={(e) =>
@@ -465,15 +462,15 @@ export function SubAgentForm({ open, onOpenChange, editing }: SubAgentFormProps)
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              Cancel
+              {t("subagent.dialog-cancel")}
             </Button>
             <Button type="submit" disabled={pending || overLimit}>
               {pending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : editing ? (
-                "Save"
+                t("subagent.dialog-save")
               ) : (
-                "Create"
+                t("subagent.dialog-create")
               )}
             </Button>
           </DialogFooter>

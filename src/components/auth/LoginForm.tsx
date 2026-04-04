@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { signIn } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -27,6 +28,7 @@ import { SEED_USERS } from "@/lib/seed-credentials"
 const showDevSeedLogin = process.env.NODE_ENV !== "production"
 
 export function LoginForm() {
+  const { t } = useTranslation()
   const [isPending, setIsPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
@@ -51,7 +53,7 @@ export function LoginForm() {
     })
 
     if (res?.error) {
-      setError(res.error.message || "Invalid email or password")
+      setError(res.error.message || t("auth.invalid-credentials"))
       setIsPending(false)
     } else {
       router.push("/chat")
@@ -62,12 +64,11 @@ export function LoginForm() {
     <Card className="w-full max-w-md border-border/50 bg-card/80 backdrop-blur-sm">
       <CardHeader className="text-center">
         <CardTitle className="text-2xl font-bold bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">
-          Welcome Back
+          {t("auth.welcome-back")}
         </CardTitle>
-        <CardDescription>Sign in to continue to KIOS Chat</CardDescription>
+        <CardDescription>{t("auth.sign-in-continue")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* OAuth Buttons */}
         <div className="grid grid-cols-2 gap-3">
           <Button
             variant="outline"
@@ -76,7 +77,7 @@ export function LoginForm() {
             type="button"
             disabled={isPending}
           >
-            <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+            <svg className="me-2 h-4 w-4" viewBox="0 0 24 24">
               <path
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
                 fill="#4285F4"
@@ -94,7 +95,7 @@ export function LoginForm() {
                 fill="#EA4335"
               />
             </svg>
-            Google
+            {t("auth.google")}
           </Button>
           <Button
             variant="outline"
@@ -103,8 +104,8 @@ export function LoginForm() {
             type="button"
             disabled={isPending}
           >
-            <Facebook className="mr-2 h-4 w-4" />
-            Facebook
+            <Facebook className="me-2 h-4 w-4" />
+            {t("auth.facebook")}
           </Button>
         </div>
 
@@ -120,7 +121,7 @@ export function LoginForm() {
                 setPassword(SEED_USERS.root.password)
               }}
             >
-              root
+              {t("auth.dev-root")}
             </Button>
             <Button
               type="button"
@@ -132,7 +133,7 @@ export function LoginForm() {
                 setPassword(SEED_USERS.user.password)
               }}
             >
-              user
+              {t("auth.dev-user")}
             </Button>
           </div>
         )}
@@ -143,12 +144,11 @@ export function LoginForm() {
           </div>
           <div className="relative flex justify-center text-xs uppercase">
             <span className="bg-card px-2 text-muted-foreground">
-              Or continue with
+              {t("auth.or-continue-with")}
             </span>
           </div>
         </div>
 
-        {/* Email/Password Form */}
         <form onSubmit={handleEmailLogin} className="space-y-4">
           {error && (
             <p className="text-sm text-destructive text-center bg-destructive/10 py-2 px-3 rounded-md">
@@ -157,14 +157,14 @@ export function LoginForm() {
           )}
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t("auth.email")}</Label>
             <Input
               id="email"
               name="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder={t("auth.email-placeholder")}
               required
               autoComplete="email"
               disabled={isPending}
@@ -172,7 +172,7 @@ export function LoginForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t("auth.password")}</Label>
             <InputGroup className="border-input">
               <InputGroupInput
                 id="password"
@@ -180,7 +180,7 @@ export function LoginForm() {
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder={t("auth.password-placeholder")}
                 required
                 autoComplete="current-password"
                 disabled={isPending}
@@ -191,7 +191,7 @@ export function LoginForm() {
                   size="icon-xs"
                   variant="ghost"
                   onClick={() => setShowPassword((v) => !v)}
-                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-label={showPassword ? t("auth.hide-password") : t("auth.show-password")}
                   aria-pressed={showPassword}
                 >
                   {showPassword ? (
@@ -205,18 +205,18 @@ export function LoginForm() {
           </div>
 
           <Button type="submit" className="w-full" disabled={isPending}>
-            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Sign In
+            {isPending && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+            {t("auth.sign-in")}
           </Button>
         </form>
 
         <p className="text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?{" "}
+          {t("auth.no-account")}{" "}
           <Link
             href="/register"
             className="text-primary underline-offset-4 hover:underline"
           >
-            Sign up
+            {t("auth.sign-up-link")}
           </Link>
         </p>
       </CardContent>

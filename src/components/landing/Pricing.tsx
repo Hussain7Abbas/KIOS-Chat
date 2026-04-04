@@ -9,6 +9,7 @@ import Link from "next/link"
 import { useQuery } from "@tanstack/react-query"
 import type { CoinPackageData } from "@/types"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useTranslation } from "react-i18next"
 
 interface PricingApiResponse {
   threadPrice: number
@@ -21,18 +22,12 @@ async function fetchPricing(): Promise<PricingApiResponse> {
   return res.json()
 }
 
-const commonFeatures = [
-  "Pay only for what you use",
-  "Coins never expire",
-  "No recurring subscriptions",
-  "Unlimited messages per thread",
-]
-
 function formatUsd(priceInCents: number) {
   return `$${(priceInCents / 100).toFixed(2)}`
 }
 
 export function Pricing() {
+  const { t } = useTranslation()
   const { data, isLoading, isError } = useQuery({
     queryKey: ["public-pricing"],
     queryFn: fetchPricing,
@@ -40,6 +35,13 @@ export function Pricing() {
 
   const threadPrice = data?.threadPrice ?? 1
   const packages = data?.coinPackages ?? []
+
+  const commonFeatureKeys = [
+    "pricing.feature-pay-as-you-go",
+    "pricing.feature-no-expire",
+    "pricing.feature-no-subscription",
+    "pricing.feature-unlimited-messages",
+  ] as const
 
   return (
     <section className="py-24 px-4" id="pricing">
@@ -52,18 +54,20 @@ export function Pricing() {
           className="text-center mb-10"
         >
           <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-            Coin packages
+            {t("pricing.section-title")}
           </h2>
           <p className="text-muted-foreground text-lg max-w-xl mx-auto mb-6">
-            Buy coins with a one-time payment, then spend them on new chat threads. No subscriptions.
+            {t("pricing.section-subtitle")}
           </p>
           <div className="flex flex-wrap items-center justify-center gap-2 text-sm">
-            <span className="text-muted-foreground">New thread cost:</span>
+            <span className="text-muted-foreground">{t("pricing.thread-cost-label")}</span>
             {threadPrice === 0 ? (
-              <Badge className="bg-green-600 hover:bg-green-600">Free</Badge>
+              <Badge className="bg-green-600 hover:bg-green-600">{t("common.free")}</Badge>
             ) : (
               <Badge variant="secondary">
-                {threadPrice} coin{threadPrice === 1 ? "" : "s"} per thread
+                {threadPrice === 1
+                  ? t("pricing.thread-per-singular", { count: threadPrice })
+                  : t("pricing.thread-per-many", { count: threadPrice })}
               </Badge>
             )}
           </div>
@@ -79,13 +83,13 @@ export function Pricing() {
 
         {isError && (
           <p className="text-center text-sm text-destructive">
-            Could not load pricing. Please try again later.
+            {t("pricing.load-error")}
           </p>
         )}
 
         {!isLoading && !isError && packages.length === 0 && (
           <p className="text-center text-muted-foreground text-sm">
-            Coin packages are not configured yet.
+            {t("pricing.not-configured")}
           </p>
         )}
 
@@ -107,10 +111,10 @@ export function Pricing() {
                   }`}
                 >
                   {tier.isPopular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <div className="absolute -top-3 start-1/2 -translate-x-1/2">
                       <Badge className="gap-1">
                         <Zap className="h-3 w-3" />
-                        Most Popular
+                        {t("pricing.most-popular")}
                       </Badge>
                     </div>
                   )}
@@ -120,21 +124,21 @@ export function Pricing() {
                       <span className="text-4xl font-bold">
                         {formatUsd(tier.priceInCents)}
                       </span>
-                      <span className="text-muted-foreground"> / one-time</span>
+                      <span className="text-muted-foreground"> {t("pricing.one-time")}</span>
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Adds {tier.coins} coins to your balance
+                      {t("pricing.adds-coins", { count: tier.coins })}
                     </p>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <ul className="space-y-2.5">
-                      {commonFeatures.map((feature) => (
+                      {commonFeatureKeys.map((key) => (
                         <li
-                          key={feature}
+                          key={key}
                           className="flex items-center gap-2 text-sm"
                         >
                           <Check className="h-4 w-4 text-green-500 shrink-0" />
-                          {feature}
+                          {t(key)}
                         </li>
                       ))}
                     </ul>
@@ -143,7 +147,7 @@ export function Pricing() {
                         className="w-full mt-2"
                         variant={tier.isPopular ? "default" : "outline"}
                       >
-                        Get {tier.label}
+                        {t("pricing.get-package", { label: tier.label })}
                       </Button>
                     </Link>
                   </CardContent>

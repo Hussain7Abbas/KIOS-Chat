@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import type { CoinPackageData } from "@/types"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -35,6 +36,7 @@ function formatUsd(priceInCents: number) {
 }
 
 export function CoinPackageManager({ initialPackages }: CoinPackageManagerProps) {
+  const { t } = useTranslation()
   const [packages, setPackages] = useState(initialPackages)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -84,15 +86,15 @@ export function CoinPackageManager({ initialPackages }: CoinPackageManagerProps)
     const sortNum = Number.parseInt(sortOrder, 10)
     const priceCents = parsePriceCents()
     if (!label.trim() || Number.isNaN(coinsNum) || coinsNum < 1) {
-      toast.error("Enter a valid label and coin amount")
+      toast.error(t("coin-packages-admin.validation-label-coins"))
       return
     }
     if (priceCents === null) {
-      toast.error("Enter a valid USD price")
+      toast.error(t("coin-packages-admin.validation-price"))
       return
     }
     if (Number.isNaN(sortNum)) {
-      toast.error("Enter a valid sort order")
+      toast.error(t("coin-packages-admin.validation-sort"))
       return
     }
 
@@ -116,7 +118,7 @@ export function CoinPackageManager({ initialPackages }: CoinPackageManagerProps)
         setPackages((prev) =>
           prev.map((p) => (p.id === updated.id ? updated : p))
         )
-        toast.success("Package updated")
+        toast.success(t("coin-packages-admin.toast-updated"))
       } else {
         const res = await fetch("/api/coin-packages", {
           method: "POST",
@@ -133,12 +135,12 @@ export function CoinPackageManager({ initialPackages }: CoinPackageManagerProps)
         if (!res.ok) throw new Error("create failed")
         const created = (await res.json()) as CoinPackageData
         setPackages((prev) => [...prev, created].sort((a, b) => a.sortOrder - b.sortOrder))
-        toast.success("Package created")
+        toast.success(t("coin-packages-admin.toast-created"))
       }
       setDialogOpen(false)
       resetForm()
     } catch {
-      toast.error("Could not save package")
+      toast.error(t("coin-packages-admin.toast-save-failed"))
     } finally {
       setIsPending(false)
     }
@@ -150,10 +152,10 @@ export function CoinPackageManager({ initialPackages }: CoinPackageManagerProps)
       const res = await fetch(`/api/coin-packages/${id}`, { method: "DELETE" })
       if (!res.ok) throw new Error("delete failed")
       setPackages((prev) => prev.filter((p) => p.id !== id))
-      toast.success("Package deleted")
+      toast.success(t("coin-packages-admin.toast-deleted"))
       setDeleteId(null)
     } catch {
-      toast.error("Could not delete package")
+      toast.error(t("coin-packages-admin.toast-delete-failed"))
     } finally {
       setIsPending(false)
     }
@@ -163,14 +165,14 @@ export function CoinPackageManager({ initialPackages }: CoinPackageManagerProps)
     <Card>
       <CardHeader className="flex flex-row items-start justify-between gap-4">
         <div>
-          <CardTitle>Coin packages</CardTitle>
+          <CardTitle>{t("coin-packages-admin.card-title")}</CardTitle>
           <CardDescription>
-            Packages users can buy with Stripe. Prices are in USD; each package grants the listed number of coins.
+            {t("coin-packages-admin.card-desc")}
           </CardDescription>
         </div>
         <Button type="button" size="sm" onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-1" />
-          Add package
+          <Plus className="h-4 w-4 me-1" />
+          {t("coin-packages-admin.add-package")}
         </Button>
       </CardHeader>
       <CardContent>
@@ -178,19 +180,19 @@ export function CoinPackageManager({ initialPackages }: CoinPackageManagerProps)
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Label</TableHead>
-                <TableHead>Coins</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Order</TableHead>
-                <TableHead>Flags</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t("coin-packages-admin.table-label")}</TableHead>
+                <TableHead>{t("coin-packages-admin.table-coins")}</TableHead>
+                <TableHead>{t("coin-packages-admin.table-price")}</TableHead>
+                <TableHead>{t("coin-packages-admin.table-order")}</TableHead>
+                <TableHead>{t("coin-packages-admin.table-flags")}</TableHead>
+                <TableHead className="text-end">{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {packages.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center text-muted-foreground h-24">
-                    No coin packages yet. Add one to enable purchases.
+                    {t("coin-packages-admin.empty")}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -202,21 +204,21 @@ export function CoinPackageManager({ initialPackages }: CoinPackageManagerProps)
                     <TableCell>{pkg.sortOrder}</TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
-                        {pkg.isPopular && <Badge variant="default">Popular</Badge>}
+                        {pkg.isPopular && <Badge variant="default">{t("common.popular")}</Badge>}
                         {pkg.isActive ? (
-                          <Badge variant="secondary">Active</Badge>
+                          <Badge variant="secondary">{t("common.active")}</Badge>
                         ) : (
-                          <Badge variant="outline">Inactive</Badge>
+                          <Badge variant="outline">{t("common.inactive")}</Badge>
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="text-right space-x-1">
+                    <TableCell className="text-end space-x-1">
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
                         onClick={() => openEdit(pkg)}
-                        aria-label="Edit package"
+                        aria-label={t("coin-packages-admin.edit-aria")}
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -225,7 +227,7 @@ export function CoinPackageManager({ initialPackages }: CoinPackageManagerProps)
                         variant="ghost"
                         size="icon"
                         onClick={() => setDeleteId(pkg.id)}
-                        aria-label="Delete package"
+                        aria-label={t("coin-packages-admin.delete-aria")}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
@@ -240,23 +242,23 @@ export function CoinPackageManager({ initialPackages }: CoinPackageManagerProps)
         <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) resetForm() }}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>{editingId ? "Edit package" : "New coin package"}</DialogTitle>
+              <DialogTitle>{editingId ? t("coin-packages-admin.dialog-edit") : t("coin-packages-admin.dialog-new")}</DialogTitle>
               <DialogDescription>
-                Amounts are stored in cents on the server; enter dollars below for the Stripe checkout price.
+                {t("coin-packages-admin.dialog-desc")}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3 py-2">
               <div className="space-y-2">
-                <Label htmlFor="pkg-label">Label</Label>
+                <Label htmlFor="pkg-label">{t("common.label")}</Label>
                 <Input
                   id="pkg-label"
                   value={label}
                   onChange={(e) => setLabel(e.target.value)}
-                  placeholder="Starter"
+                  placeholder={t("coin-packages-admin.placeholder-label")}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="pkg-coins">Coins</Label>
+                <Label htmlFor="pkg-coins">{t("coin-packages-admin.field-coins")}</Label>
                 <Input
                   id="pkg-coins"
                   type="number"
@@ -266,7 +268,7 @@ export function CoinPackageManager({ initialPackages }: CoinPackageManagerProps)
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="pkg-price">Price (USD)</Label>
+                <Label htmlFor="pkg-price">{t("coin-packages-admin.field-price-usd")}</Label>
                 <Input
                   id="pkg-price"
                   type="text"
@@ -276,7 +278,7 @@ export function CoinPackageManager({ initialPackages }: CoinPackageManagerProps)
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="pkg-sort">Sort order</Label>
+                <Label htmlFor="pkg-sort">{t("coin-packages-admin.field-sort")}</Label>
                 <Input
                   id="pkg-sort"
                   type="number"
@@ -291,7 +293,7 @@ export function CoinPackageManager({ initialPackages }: CoinPackageManagerProps)
                     checked={isPopular}
                     onChange={(e) => setIsPopular(e.target.checked)}
                   />
-                  Popular
+                  {t("coin-packages-admin.popular-check")}
                 </label>
                 <label className="flex items-center gap-2 text-sm">
                   <input
@@ -299,17 +301,17 @@ export function CoinPackageManager({ initialPackages }: CoinPackageManagerProps)
                     checked={isActive}
                     onChange={(e) => setIsActive(e.target.checked)}
                   />
-                  Active
+                  {t("coin-packages-admin.active-check")}
                 </label>
               </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button type="button" onClick={handleSave} disabled={isPending}>
-                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save
+                {isPending && <Loader2 className="me-2 h-4 w-4 animate-spin" />}
+                {t("common.save")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -318,14 +320,14 @@ export function CoinPackageManager({ initialPackages }: CoinPackageManagerProps)
         <Dialog open={deleteId !== null} onOpenChange={(o) => { if (!o) setDeleteId(null) }}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Delete package?</DialogTitle>
+              <DialogTitle>{t("coin-packages-admin.delete-title")}</DialogTitle>
               <DialogDescription>
-                This cannot be undone. Past Stripe purchases are unaffected.
+                {t("coin-packages-admin.delete-desc")}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDeleteId(null)}>
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button
                 type="button"
@@ -333,7 +335,7 @@ export function CoinPackageManager({ initialPackages }: CoinPackageManagerProps)
                 disabled={isPending}
                 onClick={() => deleteId && handleDelete(deleteId)}
               >
-                Delete
+                {t("common.delete")}
               </Button>
             </DialogFooter>
           </DialogContent>

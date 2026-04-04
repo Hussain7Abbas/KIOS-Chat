@@ -1,6 +1,7 @@
 "use client"
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import type { ThreadData } from "@/types"
 
@@ -51,6 +52,14 @@ async function deleteThread(threadId: string): Promise<void> {
   if (!res.ok) throw new Error("Failed to delete thread")
 }
 
+function mapThreadError(message: string, t: (key: string) => string): string {
+  if (message === "Failed to fetch threads") return t("errors.fetch-threads")
+  if (message === "Failed to create thread") return t("errors.create-thread")
+  if (message === "Failed to rename thread") return t("errors.rename-thread")
+  if (message === "Failed to delete thread") return t("errors.delete-thread")
+  return message
+}
+
 export function useThreads() {
   return useQuery({
     queryKey: ["threads"],
@@ -59,6 +68,7 @@ export function useThreads() {
 }
 
 export function useCreateThread() {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -67,7 +77,7 @@ export function useCreateThread() {
       queryClient.invalidateQueries({ queryKey: ["threads"] })
     },
     onError: (err: Error) => {
-      toast.error(err.message)
+      toast.error(mapThreadError(err.message, t))
     },
   })
 }

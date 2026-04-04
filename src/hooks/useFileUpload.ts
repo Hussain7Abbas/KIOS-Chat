@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useCallback } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { validateChatUpload } from "@/lib/fileUploadValidation"
 import type { UploadResponse } from "@/types"
@@ -16,6 +17,7 @@ export function useFileUpload({
   maxFiles = 5,
   onPdfRejected,
 }: UseFileUploadOptions) {
+  const { t } = useTranslation()
   const [files, setFiles] = useState<UploadResponse[]>([])
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
@@ -30,7 +32,9 @@ export function useFileUpload({
           onPdfRejected?.()
           return null
         }
-        toast.error(precheck.error)
+        toast.error(
+          t(precheck.errorKey, precheck.errorParams ?? {}),
+        )
         return null
       }
 
@@ -48,13 +52,20 @@ export function useFileUpload({
         })
 
         if (!res.ok) {
-          const data: { error?: string; showOcrModal?: boolean } =
-            await res.json()
+          const data: {
+            error?: string
+            errorParams?: Record<string, string>
+            showOcrModal?: boolean
+          } = await res.json()
           if (data.showOcrModal) {
             onPdfRejected?.()
             return null
           }
-          toast.error(data.error || "Upload failed")
+          if (data.error) {
+            toast.error(t(data.error, data.errorParams ?? {}))
+          } else {
+            toast.error(t("upload.failed"))
+          }
           return null
         }
 
@@ -63,14 +74,14 @@ export function useFileUpload({
         setFiles((prev) => [...prev, uploaded])
         return uploaded
       } catch {
-        toast.error("Upload failed")
+        toast.error(t("upload.failed"))
         return null
       } finally {
         setIsUploading(false)
         setUploadProgress(0)
       }
     },
-    [threadId, files.length, maxFiles, onPdfRejected]
+    [threadId, files.length, maxFiles, onPdfRejected, t],
   )
 
   const removeFile = useCallback((fileId: string) => {

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import {
   Dialog,
   DialogContent,
@@ -27,6 +28,7 @@ export function BuyCoinsModal({
   open: controlledOpen,
   onOpenChange,
 }: BuyCoinsModalProps) {
+  const { t } = useTranslation()
   const [isPending, setIsPending] = useState(false)
   const [internalOpen, setInternalOpen] = useState(false)
   const isControlled = controlledOpen !== undefined
@@ -51,7 +53,7 @@ export function BuyCoinsModal({
       const data: { url: string } = await res.json()
       window.location.href = data.url
     } catch {
-      toast.error("Failed to initiate purchase. Please try again.")
+      toast.error(t("buy-coins.purchase-failed"))
     } finally {
       setIsPending(false)
     }
@@ -63,17 +65,17 @@ export function BuyCoinsModal({
         <DialogTrigger render={trigger ? (trigger as React.ReactElement) : <Button />}>
           {!trigger && (
             <>
-              <ShoppingCart className="mr-2 h-4 w-4" />
-              Buy Coins
+              <ShoppingCart className="me-2 h-4 w-4" />
+              {t("buy-coins.button")}
             </>
           )}
         </DialogTrigger>
       )}
       <DialogContent className="max-w-2xl sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Purchase coin packages</DialogTitle>
+          <DialogTitle>{t("buy-coins.title")}</DialogTitle>
           <DialogDescription>
-            Choose a package to add coins to your account. Coins never expire.
+            {t("buy-coins.description")}
           </DialogDescription>
         </DialogHeader>
         {isLoading && (
@@ -85,12 +87,12 @@ export function BuyCoinsModal({
         )}
         {isError && (
           <p className="text-sm text-destructive pt-4">
-            Could not load packages. Please try again later.
+            {t("buy-coins.load-error")}
           </p>
         )}
         {!isLoading && !isError && packages && packages.length === 0 && (
           <p className="text-sm text-muted-foreground pt-4">
-            No coin packages are available yet. Contact an administrator.
+            {t("buy-coins.no-packages")}
           </p>
         )}
         {!isLoading && packages && packages.length > 0 && (

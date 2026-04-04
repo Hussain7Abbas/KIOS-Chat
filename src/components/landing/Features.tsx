@@ -3,47 +3,49 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Bot, Layers, Upload, Shield, Zap, Globe } from "lucide-react"
 import { motion } from "framer-motion"
-
-const features = [
-  {
-    icon: Bot,
-    title: "Multiple AI Models",
-    description:
-      "Access GPT-4o, Claude, Gemini, Llama, Mistral, and more through a single interface.",
-  },
-  {
-    icon: Layers,
-    title: "Custom Agent Prompt",
-    description:
-      "Configure a system prompt to personalize your AI assistant's behavior and tone.",
-  },
-  {
-    icon: Upload,
-    title: "File Attachments",
-    description:
-      "Upload images and documents directly into your conversations for context-aware responses.",
-  },
-  {
-    icon: Shield,
-    title: "Role-Based Access",
-    description:
-      "Secure admin dashboard with user management, usage stats, and subscription controls.",
-  },
-  {
-    icon: Zap,
-    title: "Real-Time Streaming",
-    description:
-      "See responses appear word by word with live streaming for a natural conversation feel.",
-  },
-  {
-    icon: Globe,
-    title: "Thread Management",
-    description:
-      "Organize your conversations with thread creation, renaming, archiving, and deletion.",
-  },
-]
+import { useTranslation } from "react-i18next"
+import { useMemo } from "react"
 
 export function Features() {
+  const { t } = useTranslation()
+
+  const features = useMemo(
+    () =>
+      [
+        {
+          icon: Bot,
+          titleKey: "features.multiple-models-title",
+          descKey: "features.multiple-models-desc",
+        },
+        {
+          icon: Layers,
+          titleKey: "features.custom-agent-title",
+          descKey: "features.custom-agent-desc",
+        },
+        {
+          icon: Upload,
+          titleKey: "features.attachments-title",
+          descKey: "features.attachments-desc",
+        },
+        {
+          icon: Shield,
+          titleKey: "features.rbac-title",
+          descKey: "features.rbac-desc",
+        },
+        {
+          icon: Zap,
+          titleKey: "features.streaming-title",
+          descKey: "features.streaming-desc",
+        },
+        {
+          icon: Globe,
+          titleKey: "features.threads-title",
+          descKey: "features.threads-desc",
+        },
+      ] as const,
+    [],
+  )
+
   return (
     <section className="py-24 px-4" id="features">
       <div className="max-w-6xl mx-auto">
@@ -55,18 +57,17 @@ export function Features() {
           className="text-center mb-16"
         >
           <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-            Everything you need
+            {t("features.section-title")}
           </h2>
           <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-            A complete AI chat platform with powerful features built for
-            productivity
+            {t("features.section-subtitle")}
           </p>
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((feature, index) => (
             <motion.div
-              key={feature.title}
+              key={feature.titleKey}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -77,11 +78,11 @@ export function Features() {
                   <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center mb-2">
                     <feature.icon className="h-5 w-5 text-primary" />
                   </div>
-                  <CardTitle className="text-base">{feature.title}</CardTitle>
+                  <CardTitle className="text-base">{t(feature.titleKey)}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
-                    {feature.description}
+                    {t(feature.descKey)}
                   </p>
                 </CardContent>
               </Card>

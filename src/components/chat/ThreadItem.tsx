@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import Link from "next/link"
 import { useRenameThread } from "@/hooks/useThreads"
 import { Button } from "@/components/ui/button"
@@ -32,6 +33,7 @@ interface ThreadItemProps {
 }
 
 export function ThreadItem({ thread, isActive, onDelete }: ThreadItemProps) {
+  const { t } = useTranslation()
   const [isRenaming, setIsRenaming] = useState(false)
   const [newTitle, setNewTitle] = useState(thread.title)
   const renameThread = useRenameThread()
@@ -49,7 +51,7 @@ export function ThreadItem({ thread, isActive, onDelete }: ThreadItemProps) {
       })
       setIsRenaming(false)
     } catch {
-      toast.error("Failed to rename thread")
+      toast.error(t("chat.rename-failed"))
     }
   }
 
@@ -58,7 +60,9 @@ export function ThreadItem({ thread, isActive, onDelete }: ThreadItemProps) {
     if (result.error) {
       toast.error(result.error)
     } else {
-      toast.success(thread.isArchived ? "Thread unarchived" : "Thread archived")
+      toast.success(
+        thread.isArchived ? t("chat.thread-unarchived") : t("chat.thread-archived"),
+      )
     }
   }
 
@@ -97,14 +101,14 @@ export function ThreadItem({ thread, isActive, onDelete }: ThreadItemProps) {
         {thread.status === "PROCESSING" && (
           <span
             className="h-2 w-2 shrink-0 rounded-full bg-sky-500 animate-pulse"
-            title="Processing"
+            title={t("chat.processing")}
             aria-hidden
           />
         )}
         {thread.status === "WAITING" && (
           <span
             className="h-2 w-2 shrink-0 rounded-full bg-amber-500"
-            title="Waiting for sub-agent"
+            title={t("chat.waiting-sub-agent")}
             aria-hidden
           />
         )}
@@ -117,19 +121,19 @@ export function ThreadItem({ thread, isActive, onDelete }: ThreadItemProps) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => setIsRenaming(true)}>
-            <Pencil className="mr-2 h-4 w-4" />
-            Rename
+            <Pencil className="me-2 h-4 w-4" />
+            {t("chat.rename")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleArchive}>
-            <Archive className="mr-2 h-4 w-4" />
-            {thread.isArchived ? "Unarchive" : "Archive"}
+            <Archive className="me-2 h-4 w-4" />
+            {thread.isArchived ? t("chat.unarchive") : t("chat.archive")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={onDelete}
             className="text-destructive focus:text-destructive"
           >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete
+            <Trash2 className="me-2 h-4 w-4" />
+            {t("chat.delete")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

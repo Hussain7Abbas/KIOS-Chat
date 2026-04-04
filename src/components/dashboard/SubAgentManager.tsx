@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -21,6 +22,7 @@ import { SubAgentCard } from "./SubAgentCard"
 import { SubAgentForm } from "./SubAgentForm"
 
 export function SubAgentManager() {
+  const { t } = useTranslation()
   const { data: agents, isLoading } = useSubAgents()
   const deleteMut = useDeleteSubAgent()
   const [formOpen, setFormOpen] = useState(false)
@@ -40,14 +42,14 @@ export function SubAgentManager() {
   }
 
   const handleDelete = async (agent: SubAgentDto) => {
-    if (!confirm(`Delete sub-agent "${agent.name}"? This cannot be undone.`)) {
+    if (!confirm(t("subagent.delete-confirm", { name: agent.name }))) {
       return
     }
     try {
       await deleteMut.mutateAsync(agent.id)
-      toast.success("Sub-agent deleted")
+      toast.success(t("subagent.deleted"))
     } catch {
-      toast.error("Failed to delete sub-agent")
+      toast.error(t("subagent.delete-failed"))
     }
   }
 
@@ -56,16 +58,14 @@ export function SubAgentManager() {
       <Card>
         <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
           <div>
-            <CardTitle className="text-lg">Sub-agents</CardTitle>
+            <CardTitle className="text-lg">{t("subagent.manager-title")}</CardTitle>
             <CardDescription>
-              Configure tools the main agent can call. Each sub-agent runs in
-              its own queued job with an isolated context (input only, no main
-              thread history).
+              {t("subagent.manager-desc")}
             </CardDescription>
           </div>
           <Button type="button" size="sm" onClick={openCreate}>
-            <Plus className="h-4 w-4 mr-1" />
-            Add sub-agent
+            <Plus className="h-4 w-4 me-1" />
+            {t("subagent.add")}
           </Button>
         </CardHeader>
         <CardContent>
@@ -77,8 +77,7 @@ export function SubAgentManager() {
             </div>
           ) : !agents || agents.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4">
-              No sub-agents yet. Add one to expose function tools to the main
-              agent.
+              {t("subagent.empty")}
             </p>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">

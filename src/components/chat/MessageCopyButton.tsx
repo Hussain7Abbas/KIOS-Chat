@@ -1,53 +1,48 @@
 "use client"
 
 import { useState } from "react"
-import { toast } from "sonner"
-import { Check, Copy } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import { Check, Copy } from "lucide-react"
+import { toast } from "sonner"
 
 interface MessageCopyButtonProps {
   text: string
   className?: string
 }
 
-export function MessageCopyButton({ text, className }: MessageCopyButtonProps) {
+export function MessageCopyButton({ text: textProp, className }: MessageCopyButtonProps) {
+  const { t } = useTranslation()
   const [copied, setCopied] = useState(false)
 
-  const handleClick = async () => {
-    const trimmed = text.trim()
-    if (!trimmed) {
-      toast.error("Nothing to copy")
+  const handleCopy = async () => {
+    const text = textProp.trim()
+    if (!text) {
+      toast.error(t("chat.copy-nothing"))
       return
     }
     try {
-      await navigator.clipboard.writeText(trimmed)
+      await navigator.clipboard.writeText(text)
       setCopied(true)
-      window.setTimeout(() => setCopied(false), 2000)
+      setTimeout(() => setCopied(false), 2000)
     } catch {
-      toast.error("Could not copy")
+      toast.error(t("chat.copy-failed"))
     }
   }
 
   return (
     <Button
       type="button"
-      size="icon"
       variant="ghost"
-      className={cn(
-        "absolute top-1.5 inset-e-1.5 z-10 h-7 w-7 opacity-0 transition-opacity group-hover/message:opacity-100 focus-visible:opacity-100",
-        className
-      )}
-      onClick={(e) => {
-        e.stopPropagation()
-        void handleClick()
-      }}
-      aria-label="Copy message"
+      size="icon"
+      className={className}
+      onClick={handleCopy}
+      aria-label={t("chat.copy-message-aria")}
     >
       {copied ? (
-        <Check className="h-3.5 w-3.5" aria-hidden />
+        <Check className="h-3.5 w-3.5 text-green-500" />
       ) : (
-        <Copy className="h-3.5 w-3.5" aria-hidden />
+        <Copy className="h-3.5 w-3.5" />
       )}
     </Button>
   )
