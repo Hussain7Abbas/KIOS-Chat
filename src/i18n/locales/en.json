@@ -403,5 +403,11 @@
     "label": "Language",
     "ar": "العربية",
     "en": "English"
+  },
+  "theme": {
+    "label": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
   }
 }
