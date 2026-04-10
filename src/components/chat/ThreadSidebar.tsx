@@ -36,6 +36,7 @@ import {
   PanelLeft,
 } from "lucide-react"
 import Link from "next/link"
+import { ThemeMenuItems } from "@/components/ThemeSwitcher"
 
 interface ThreadSidebarProps {
   collapsed?: boolean
@@ -233,6 +234,7 @@ export function ThreadSidebar({
                 </DropdownMenuItem>
               )}
               {isAdmin && <DropdownMenuSeparator />}
+              <ThemeMenuItems />
               <DropdownMenuItem
                 onClick={() => onOpenBuyCoins()}
               >

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { MessageSquare, LayoutDashboard } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { LanguageSwitcher } from "@/components/LanguageSwitcher"
+import { ThemeSwitcher } from "@/components/ThemeSwitcher"
 
 interface LandingNavbarProps {
   isAuthenticated: boolean
@@ -26,6 +27,7 @@ export function LandingNavbar({
         </Link>
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <ThemeSwitcher />
           <LanguageSwitcher variant="ghost" size="sm" />
           {isAuthenticated ? (
             <>

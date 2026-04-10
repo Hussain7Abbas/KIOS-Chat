@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { AppToaster } from "@/components/AppToaster"
 import { QueryProvider } from "@/components/providers/QueryProvider"
 import { I18nProvider } from "@/components/providers/I18nProvider"
+import { ThemeProvider } from "@/components/providers/ThemeProvider"
 import { defaultLocale } from "@/i18n/config"
 import "./globals.css"
 
@@ -37,16 +38,18 @@ export default function RootLayout({
     <html
       lang={defaultLocale}
       dir="rtl"
-      className={`${geistSans.variable} ${geistMono.variable} ${notoArabic.variable} dark h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${notoArabic.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <QueryProvider>
           <I18nProvider>
-            <TooltipProvider delay={300}>
-              {children}
-              <AppToaster />
-            </TooltipProvider>
+            <ThemeProvider>
+              <TooltipProvider delay={300}>
+                {children}
+                <AppToaster />
+              </TooltipProvider>
+            </ThemeProvider>
           </I18nProvider>
         </QueryProvider>
       </body>

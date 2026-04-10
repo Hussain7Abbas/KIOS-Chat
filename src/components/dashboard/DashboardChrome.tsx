@@ -5,6 +5,7 @@ import Link from "next/link"
 import { MessageSquare, ArrowLeft } from "lucide-react"
 import { DashboardNav } from "@/components/dashboard/DashboardNav"
 import { LanguageSwitcher } from "@/components/LanguageSwitcher"
+import { ThemeSwitcher } from "@/components/ThemeSwitcher"
 
 export function DashboardTopBar() {
   const { t } = useTranslation()
@@ -17,6 +18,7 @@ export function DashboardTopBar() {
           <span className="truncate">{t("dashboard.layout-title")}</span>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
+          <ThemeSwitcher />
           <LanguageSwitcher variant="outline" size="sm" />
           <Link
             href="/chat"
