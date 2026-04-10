@@ -1,3 +1,6 @@
+"use client"
+
+import { useTranslation } from "react-i18next"
 import { cn } from "@/lib/utils"
 import type { InstructionLimitResponse } from "@/lib/instructionLimitClient"
 
@@ -21,6 +24,7 @@ export function InstructionContextLimitLines({
   limitQueryError,
   size = "default",
 }: InstructionContextLimitLinesProps) {
+  const { t } = useTranslation()
   const overLimit = maxChars != null && charCount > maxChars
   const countClass = size === "compact" ? "text-xs" : "text-sm"
   const metaClass = "text-xs text-muted-foreground"
@@ -36,25 +40,33 @@ export function InstructionContextLimitLines({
       >
         {maxChars != null ? (
           <>
-            {charCount.toLocaleString()}/{maxChars.toLocaleString()} characters
+            {t("instruction-limit.chars", {
+              current: charCount.toLocaleString(),
+              max: maxChars.toLocaleString(),
+            })}
           </>
         ) : (
-          <>{charCount.toLocaleString()} characters</>
+          <>
+            {t("instruction-limit.chars-only", {
+              count: charCount.toLocaleString(),
+            })}
+          </>
         )}
       </p>
       {limitQueryPending ? (
-        <p className={metaClass}>Loading context limit…</p>
+        <p className={metaClass}>{t("instruction-limit.loading")}</p>
       ) : limitQueryError ? (
-        <p className="text-xs text-destructive">Could not load context limit.</p>
+        <p className="text-xs text-destructive">
+          {t("instruction-limit.load-failed")}
+        </p>
       ) : contextTokens != null ? (
         <p className={metaClass}>
-          Model context: ~{contextTokens.toLocaleString()} tokens (OpenRouter)
+          {t("instruction-limit.model-context", {
+            tokens: contextTokens.toLocaleString(),
+          })}
         </p>
       ) : limitInfo != null ? (
-        <p className={metaClass}>
-          OpenRouter did not report context for this model; instructions are not
-          length-capped.
-        </p>
+        <p className={metaClass}>{t("instruction-limit.no-cap")}</p>
       ) : null}
     </div>
   )

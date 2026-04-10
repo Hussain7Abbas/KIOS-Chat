@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,6 +15,7 @@ interface ServicePriceEditorProps {
 }
 
 export function ServicePriceEditor({ initialThreadPrice }: ServicePriceEditorProps) {
+  const { t } = useTranslation()
   const [threadPrice, setThreadPrice] = useState(String(initialThreadPrice))
   const [isPending, setIsPending] = useState(false)
 
@@ -22,7 +24,7 @@ export function ServicePriceEditor({ initialThreadPrice }: ServicePriceEditorPro
 
   const handleSave = async () => {
     if (!isValid) {
-      toast.error("Enter a whole number 0 or greater")
+      toast.error(t("service-price.thread-invalid"))
       return
     }
     setIsPending(true)
@@ -38,9 +40,9 @@ export function ServicePriceEditor({ initialThreadPrice }: ServicePriceEditorPro
       if (!res.ok) {
         throw new Error("Save failed")
       }
-      toast.success("Thread price updated")
+      toast.success(t("service-price.thread-updated"))
     } catch {
-      toast.error("Failed to save thread price")
+      toast.error(t("service-price.thread-save-failed"))
     } finally {
       setIsPending(false)
     }
@@ -49,15 +51,15 @@ export function ServicePriceEditor({ initialThreadPrice }: ServicePriceEditorPro
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Service prices</CardTitle>
+        <CardTitle>{t("service-price.card-title")}</CardTitle>
         <CardDescription>
-          Set how many coins each system service costs. Thread price applies when a user creates a new chat thread.
+          {t("service-price.card-desc")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-2 flex-1 max-w-xs">
-            <Label htmlFor="thread-price">Thread (coins)</Label>
+            <Label htmlFor="thread-price">{t("service-price.thread-label")}</Label>
             <Input
               id="thread-price"
               type="number"
@@ -68,18 +70,20 @@ export function ServicePriceEditor({ initialThreadPrice }: ServicePriceEditorPro
             />
           </div>
           <div className="flex flex-col gap-2 items-start sm:items-end">
-            <span className="text-sm text-muted-foreground">Preview</span>
+            <span className="text-sm text-muted-foreground">{t("common.preview")}</span>
             {parsed === 0 ? (
-              <Badge className="bg-green-600 hover:bg-green-600">Free</Badge>
+              <Badge className="bg-green-600 hover:bg-green-600">{t("common.free")}</Badge>
             ) : (
               <span className="text-sm font-medium">
-                {parsed} coin{parsed === 1 ? "" : "s"} per thread
+                {parsed === 1
+                  ? t("service-price.per-thread-singular", { count: parsed })
+                  : t("service-price.per-thread-many", { count: parsed })}
               </span>
             )}
           </div>
         </div>
         <Button type="button" onClick={handleSave} disabled={isPending || !isValid}>
-          Save
+          {t("service-price.save")}
         </Button>
       </CardContent>
     </Card>

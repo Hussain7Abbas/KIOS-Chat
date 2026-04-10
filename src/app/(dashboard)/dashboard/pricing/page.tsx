@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { getThreadPrice } from "@/lib/settings"
 import { ServicePriceEditor } from "@/components/dashboard/ServicePriceEditor"
 import { CoinPackageManager } from "@/components/dashboard/CoinPackageManager"
+import { DashboardSectionHeading } from "@/components/dashboard/DashboardSectionHeading"
 import type { CoinPackageData } from "@/types"
 
 export default async function PricingPage() {
@@ -25,12 +26,10 @@ export default async function PricingPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h2 className="text-xl font-semibold tracking-tight">Pricing</h2>
-        <p className="text-sm text-muted-foreground">
-          Configure coin packages for Stripe checkout and set how many coins each service costs.
-        </p>
-      </div>
+      <DashboardSectionHeading
+        titleKey="dashboard.pricing-page-title"
+        descriptionKey="dashboard.pricing-page-desc"
+      />
       <ServicePriceEditor initialThreadPrice={threadPrice} />
       <CoinPackageManager initialPackages={initialPackages} />
     </div>

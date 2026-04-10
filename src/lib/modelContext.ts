@@ -42,13 +42,24 @@ export async function getMaxAgentInstructionChars(
   return info.maxChars
 }
 
+/** When non-null, prompt exceeds the model instruction budget; use maxChars for i18n. */
+export function agentPromptLengthIssue(
+  prompt: string,
+  maxChars: number | null,
+): { maxChars: number } | null {
+  if (maxChars == null) return null
+  if (prompt.length <= maxChars) return null
+  return { maxChars }
+}
+
+/** English message for API routes (legacy); prefer keys + maxChars in new code. */
 export function agentPromptLengthError(
   prompt: string,
   maxChars: number | null,
 ): string | null {
-  if (maxChars == null) return null
-  if (prompt.length <= maxChars) return null
-  return `Instructions are too long for the selected model's context window (max about ${maxChars.toLocaleString()} characters, estimated from OpenRouter). Shorten the text or pick a larger-context model.`
+  const issue = agentPromptLengthIssue(prompt, maxChars)
+  if (!issue) return null
+  return `Instructions are too long for the selected model's context window (max about ${issue.maxChars.toLocaleString()} characters, estimated from OpenRouter). Shorten the text or pick a larger-context model.`
 }
 
 async function fetchModelsList(): Promise<OpenRouterModel[]> {

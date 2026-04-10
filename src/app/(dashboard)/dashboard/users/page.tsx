@@ -1,6 +1,9 @@
 import { requireAdmin } from "@/lib/guards"
 import { prisma } from "@/lib/prisma"
 import { UsersTable } from "@/components/dashboard/UsersTable"
+import { DashboardSectionHeading } from "@/components/dashboard/DashboardSectionHeading"
+import { UsersStatsCards } from "@/components/dashboard/UsersStatsCards"
+import { UsersPageAllHeadingClient } from "@/components/dashboard/UsersPageAllHeadingClient"
 
 export default async function DashboardUsersPage() {
   await requireAdmin()
@@ -21,42 +24,25 @@ export default async function DashboardUsersPage() {
   const totalUsers = users.length
   const totalCoinsPurchased = users.reduce(
     (acc, u) => acc + u.coinsPurchased,
-    0
+    0,
   )
   const totalCoinsBalance = users.reduce((acc, u) => acc + u.coinsBalance, 0)
 
   return (
     <div className="space-y-8">
-      <div>
-        <h2 className="text-xl font-semibold tracking-tight">Users Management</h2>
-        <p className="text-sm text-muted-foreground">
-          View all registered users and manage their coin balances.
-        </p>
-      </div>
+      <DashboardSectionHeading
+        titleKey="dashboard.users-page-title"
+        descriptionKey="dashboard.users-page-desc"
+      />
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6">
-          <h3 className="tracking-tight text-sm font-medium text-muted-foreground">
-            Total Users
-          </h3>
-          <div className="text-2xl font-bold mt-2">{totalUsers}</div>
-        </div>
-        <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6">
-          <h3 className="tracking-tight text-sm font-medium text-muted-foreground">
-            Total Coins Purchased
-          </h3>
-          <div className="text-2xl font-bold mt-2">{totalCoinsPurchased}</div>
-        </div>
-        <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-6">
-          <h3 className="tracking-tight text-sm font-medium text-muted-foreground">
-            System Coin Balances
-          </h3>
-          <div className="text-2xl font-bold mt-2">{totalCoinsBalance}</div>
-        </div>
-      </div>
+      <UsersStatsCards
+        totalUsers={totalUsers}
+        totalCoinsPurchased={totalCoinsPurchased}
+        totalCoinsBalance={totalCoinsBalance}
+      />
 
       <div>
-        <h3 className="font-medium mb-4">All Users</h3>
+        <UsersPageAllHeadingClient />
         <UsersTable users={users} />
       </div>
     </div>

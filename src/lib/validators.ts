@@ -3,19 +3,19 @@ import { z } from "zod"
 // ─── Auth Schemas ───────────────────────────────────────────────────────────
 
 export const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  email: z.string().email("validation.invalid-email"),
+  password: z.string().min(8, "validation.password-min"),
 })
 
 export const registerSchema = z
   .object({
-    name: z.string().min(2, "Name must be at least 2 characters"),
-    email: z.string().email("Invalid email address"),
-    password: z.string().min(8, "Password must be at least 8 characters"),
+    name: z.string().min(2, "validation.name-min"),
+    email: z.string().email("validation.invalid-email"),
+    password: z.string().min(8, "validation.password-min"),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
+    message: "validation.passwords-no-match",
     path: ["confirmPassword"],
   })
 
@@ -25,22 +25,22 @@ export type RegisterInput = z.infer<typeof registerSchema>
 // ─── Chat Schemas ───────────────────────────────────────────────────────────
 
 export const sendMessageSchema = z.object({
-  threadId: z.string().min(1, "Thread ID is required"),
-  content: z.string().min(1, "Message cannot be empty"),
-  model: z.string().min(1, "Model is required"),
+  threadId: z.string().min(1, "validation.thread-id-required"),
+  content: z.string().min(1, "validation.message-empty"),
+  model: z.string().min(1, "validation.model-required"),
   fileIds: z.array(z.string()).optional(),
 })
 
 export type SendMessageInput = z.infer<typeof sendMessageSchema>
 
 export const subThreadChatSchema = z.object({
-  content: z.string().min(1, "Message cannot be empty"),
+  content: z.string().min(1, "validation.message-empty"),
 })
 
 export type SubThreadChatInput = z.infer<typeof subThreadChatSchema>
 
 export const commitSubThreadMessageSchema = z.object({
-  messageId: z.string().min(1, "Message ID is required"),
+  messageId: z.string().min(1, "validation.message-id-required"),
 })
 
 export type CommitSubThreadMessageInput = z.infer<
@@ -50,7 +50,7 @@ export type CommitSubThreadMessageInput = z.infer<
 // ─── Thread Schemas ─────────────────────────────────────────────────────────
 
 export const renameThreadSchema = z.object({
-  title: z.string().min(1, "Title is required").max(100, "Title is too long"),
+  title: z.string().min(1, "validation.title-required").max(100, "validation.title-too-long"),
 })
 
 export type RenameThreadInput = z.infer<typeof renameThreadSchema>
@@ -72,7 +72,7 @@ export const subAgentParamSchema = z.object({
     .string()
     .min(1)
     .max(64)
-    .regex(subAgentToolNameRegex, "Invalid parameter name for tools"),
+    .regex(subAgentToolNameRegex, "validation.param-name-tools"),
   type: z.enum(["string", "number", "boolean"]),
   description: z.string().min(1).max(2000),
   required: z.boolean(),
@@ -84,7 +84,7 @@ export const subAgentOutputParamSchema = z.object({
     .string()
     .min(1)
     .max(64)
-    .regex(subAgentToolNameRegex, "Invalid output field name"),
+    .regex(subAgentToolNameRegex, "validation.output-field-name"),
   type: z.enum(["string", "number", "boolean"]),
   description: z.string().min(1).max(2000),
 })
@@ -94,7 +94,7 @@ export const createSubAgentSchema = z.object({
     .string()
     .min(1)
     .max(64)
-    .regex(subAgentToolNameRegex, "Name must start with a letter; use letters, digits, underscores only"),
+    .regex(subAgentToolNameRegex, "validation.subagent-name-format"),
   instructions: z.string().min(1),
   model: z.string().min(1),
   outputFormat: z.enum(["text", "json", "markdown"]),
@@ -145,7 +145,7 @@ export type CreateCoinPackageInput = z.infer<typeof createCoinPackageSchema>
 export const updateCoinPackageSchema = createCoinPackageSchema
   .partial()
   .refine((data) => Object.keys(data).length > 0, {
-    message: "At least one field is required",
+    message: "validation.update-one-field",
   })
 
 export type UpdateCoinPackageInput = z.infer<typeof updateCoinPackageSchema>

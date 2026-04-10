@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import { useRouter, usePathname } from "next/navigation"
 import { useThreads, useCreateThread, useDeleteThread } from "@/hooks/useThreads"
 import { useSession, signOut } from "@/lib/auth-client"
@@ -47,6 +48,7 @@ export function ThreadSidebar({
   onCollapseToggle,
   onOpenBuyCoins,
 }: ThreadSidebarProps) {
+  const { t } = useTranslation()
   const router = useRouter()
   const pathname = usePathname()
   const { data: session } = useSession()
@@ -103,7 +105,6 @@ export function ThreadSidebar({
   return (
     <>
       <div className="flex h-full w-full flex-col bg-card/50">
-        {/* Header */}
         <div className={`flex items-center ${collapsed ? "justify-center p-2" : "justify-between p-4"}`}>
           {collapsed ? (
             <div className="flex flex-col items-center gap-2 w-full">
@@ -123,14 +124,14 @@ export function ThreadSidebar({
             <>
               <div className="flex items-center gap-2">
                 <MessageSquare className="h-5 w-5 text-primary" />
-                <h2 className="font-semibold text-sm">KIOS Chat</h2>
+                <h2 className="font-semibold text-sm">{t("chat.sidebar-title")}</h2>
               </div>
               <div className="flex items-center gap-1">
                 <Badge
                   variant={lowOnCoins || coinsBalance <= 0 ? "destructive" : "secondary"}
                   className="text-xs"
                 >
-                  {coinsBalance} coins
+                  {coinsBalance} {t("common.coins")}
                 </Badge>
                 {onCollapseToggle && (
                   <Button
@@ -147,7 +148,6 @@ export function ThreadSidebar({
           )}
         </div>
 
-        {/* New Thread Button */}
         <div className={collapsed ? "flex justify-center px-2 pb-2" : "px-3 pb-3"}>
           <Button
             variant="outline"
@@ -156,16 +156,14 @@ export function ThreadSidebar({
             disabled={createThread.isPending}
           >
             <Plus className="h-4 w-4" />
-            {!collapsed && "New Thread"}
+            {!collapsed && t("chat.new-thread")}
           </Button>
         </div>
 
         <Separator />
 
-        {/* Spacer to push menu to bottom when collapsed */}
         {collapsed && <div className="flex-1 min-h-0" />}
 
-        {/* Thread List */}
         {!collapsed && (
           <ScrollArea className="flex-1 px-2">
             <div className="space-y-1 py-2">
@@ -190,7 +188,7 @@ export function ThreadSidebar({
               ) : (
                 <div className="flex flex-col items-center gap-4 px-3 py-6">
                   <p className="text-center text-sm text-muted-foreground">
-                    No threads yet. Start a conversation!
+                    {t("chat.no-threads")}
                   </p>
                 </div>
               )}
@@ -200,7 +198,6 @@ export function ThreadSidebar({
 
         <Separator />
 
-        {/* User Footer */}
         <div className={collapsed ? "p-2 flex justify-center" : "p-3"}>
           <DropdownMenu>
             <DropdownMenuTrigger
@@ -217,7 +214,7 @@ export function ThreadSidebar({
                   </Avatar>
                   {!collapsed && (
                     <>
-                      <span className="flex-1 truncate text-left text-sm">
+                      <span className="flex-1 truncate text-start text-sm">
                         {session?.user?.name}
                       </span>
                       <ChevronUp className="h-4 w-4 text-muted-foreground" />
@@ -230,8 +227,8 @@ export function ThreadSidebar({
               {isAdmin && (
                 <DropdownMenuItem render={<Link href="/dashboard" />}>
                   <>
-                    <LayoutDashboard className="mr-2 h-4 w-4" />
-                    Dashboard
+                    <LayoutDashboard className="me-2 h-4 w-4" />
+                    {t("chat.dashboard")}
                   </>
                 </DropdownMenuItem>
               )}
@@ -239,30 +236,30 @@ export function ThreadSidebar({
               <DropdownMenuItem
                 onClick={() => onOpenBuyCoins()}
               >
-                <ShoppingCart className="mr-2 h-4 w-4" />
-                Buy coins
+                <ShoppingCart className="me-2 h-4 w-4" />
+                {t("chat.buy-coins")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => signOut({ fetchOptions: { onSuccess: () => router.push("/") } })}
                 className="text-destructive focus:text-destructive"
               >
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign Out
+                <LogOut className="me-2 h-4 w-4" />
+                {t("chat.sign-out")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
 
-      {/* Quota Dialog */}
       <Dialog open={showQuotaDialog} onOpenChange={setShowQuotaDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Not enough coins</DialogTitle>
+            <DialogTitle>{t("chat.not-enough-coins")}</DialogTitle>
             <DialogDescription>
-              You need at least {threadPrice} coin{threadPrice === 1 ? "" : "s"} to create a new thread.
-              Purchase more coins to continue.
+              {threadPrice === 1
+                ? t("chat.quota-one", { count: threadPrice })
+                : t("chat.quota-many", { count: threadPrice })}
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-2 pt-4">
@@ -270,7 +267,7 @@ export function ThreadSidebar({
               variant="outline"
               onClick={() => setShowQuotaDialog(false)}
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={() => {
@@ -278,7 +275,7 @@ export function ThreadSidebar({
                 onOpenBuyCoins()
               }}
             >
-              Buy coins
+              {t("chat.buy-coins")}
             </Button>
           </div>
         </DialogContent>

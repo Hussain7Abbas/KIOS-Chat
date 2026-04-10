@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { Menu } from "lucide-react"
 import { useState, useEffect, useCallback } from "react"
+import { useTranslation } from "react-i18next"
 
 const SIDEBAR_COLLAPSED_KEY = "kios-sidebar-collapsed"
 
@@ -14,6 +15,8 @@ export default function ChatLayout({
 }: {
   children: React.ReactNode
 }) {
+  const { i18n } = useTranslation()
+  const mobileSheetSide = i18n.dir() === "rtl" ? "right" : "left"
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
   const [buyCoinsOpen, setBuyCoinsOpen] = useState(false)
@@ -43,7 +46,7 @@ export default function ChatLayout({
     <div className="flex h-screen overflow-hidden">
       {/* Desktop Sidebar */}
       <aside
-        className={`hidden md:flex shrink-0 border-r border-border transition-[width] duration-200 ${
+        className={`hidden md:flex shrink-0 border-e border-border transition-[width] duration-200 ${
           collapsed ? "w-16" : "w-[260px]"
         }`}
       >
@@ -56,12 +59,12 @@ export default function ChatLayout({
 
       {/* Mobile Sidebar */}
       <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-        <div className="md:hidden fixed top-0 left-0 z-40 p-2">
+        <div className="md:hidden fixed top-0 start-0 z-40 p-2">
           <SheetTrigger render={<Button variant="ghost" size="icon" className="h-9 w-9" />}>
               <Menu className="h-5 w-5" />
           </SheetTrigger>
         </div>
-        <SheetContent side="left" className="w-[260px] p-0">
+        <SheetContent side={mobileSheetSide} className="w-[260px] p-0">
           <ThreadSidebar
             collapsed={false}
             onCollapseToggle={() => {}}

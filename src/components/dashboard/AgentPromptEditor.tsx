@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useTransition, useEffect, useCallback } from "react"
+import { useTranslation } from "react-i18next"
 import { saveAgentPromptAction } from "@/app/actions/agent.actions"
 import { useInstructionContextLimit } from "@/hooks/useInstructionContextLimit"
 import { Button } from "@/components/ui/button"
@@ -23,6 +24,7 @@ export function AgentPromptEditor({
   initialPrompt,
   initialPreferredModel,
 }: AgentPromptEditorProps) {
+  const { t, i18n } = useTranslation()
   const [prompt, setPrompt] = useState(initialPrompt ?? "")
   const [preferredModel, setPreferredModel] = useState(initialPreferredModel)
   const [isPending, startTransition] = useTransition()
@@ -54,24 +56,28 @@ export function AgentPromptEditor({
           const err = (await res.json().catch(() => null)) as {
             error?: string
           } | null
-          toast.error(err?.error ?? "Could not save model preference")
+          toast.error(err?.error ?? t("agent-editor.model-pref-failed"))
           return
         }
         await refetchSession()
       } catch {
-        toast.error("Could not save model preference")
+        toast.error(t("agent-editor.model-pref-failed"))
       }
     },
-    [refetchSession]
+    [refetchSession, t],
   )
 
   const handleSave = () => {
     startTransition(async () => {
       const result = await saveAgentPromptAction(prompt)
-      if (result.error) {
-        toast.error(result.error)
+      if (!result.ok) {
+        const maxStr =
+          result.maxChars != null
+            ? result.maxChars.toLocaleString(i18n.language === "ar" ? "ar" : "en-US")
+            : ""
+        toast.error(t(result.errorKey, { max: maxStr }))
       } else {
-        toast.success("Agent prompt saved successfully")
+        toast.success(t("agent-editor.prompt-saved"))
       }
     })
   }
@@ -80,21 +86,16 @@ export function AgentPromptEditor({
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">System Prompt</CardTitle>
+          <CardTitle className="text-lg">{t("agent-editor.system-prompt-title")}</CardTitle>
           <CardDescription>
-            This prompt will be prepended to every conversation as the system
-            message. It defines your AI agent&apos;s personality and behavior.
-            Maximum size follows the selected main chat model&apos;s context from
-            OpenRouter (characters are an estimate; space is reserved for the
-            thread).
+            {t("agent-editor.system-prompt-desc")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-2">
-            <Label>Main chat model</Label>
+            <Label>{t("agent-editor.main-model-label")}</Label>
             <p className="text-xs text-muted-foreground">
-              OpenRouter model used for the main agent in every thread. Change
-              it here instead of in the chat view.
+              {t("agent-editor.main-model-hint")}
             </p>
             <ModelSelector
               value={preferredModel}
@@ -105,7 +106,7 @@ export function AgentPromptEditor({
           <Textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="You are a helpful AI assistant specialized in..."
+            placeholder={t("agent-editor.placeholder-prompt")}
             rows={12}
             className="resize-y min-h-[240px] font-mono text-sm"
             maxLength={maxChars ?? undefined}
@@ -124,52 +125,12 @@ export function AgentPromptEditor({
               disabled={isPending || overLimit}
             >
               {isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="me-2 h-4 w-4 animate-spin" />
               ) : (
-                <Save className="mr-2 h-4 w-4" />
+                <Save className="me-2 h-4 w-4" />
               )}
-              Save Prompt
+              {t("agent-editor.save-prompt")}
             </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Live Preview */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            Preview
-            <Badge variant="secondary" className="text-xs">
-              Live
-            </Badge>
-          </CardTitle>
-          <CardDescription>
-            See how your agent will respond with this system prompt
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-lg border border-border bg-background/50 p-4 space-y-4">
-            {prompt && (
-              <div className="flex gap-3 text-sm text-muted-foreground italic">
-                <Bot className="h-5 w-5 shrink-0 mt-0.5" />
-                <p className="truncate">
-                  System: {prompt.slice(0, 150)}
-                  {prompt.length > 150 ? "..." : ""}
-                </p>
-              </div>
-            )}
-            <div className="flex gap-3 text-sm">
-              <User className="h-5 w-5 shrink-0 mt-0.5 text-primary" />
-              <p>Hello, can you help me?</p>
-            </div>
-            <div className="flex gap-3 text-sm text-muted-foreground">
-              <Bot className="h-5 w-5 shrink-0 mt-0.5" />
-              <p>
-                {prompt
-                  ? "I'll respond based on the persona defined in the system prompt above."
-                  : "No system prompt configured. I'll respond with default behavior."}
-              </p>
-            </div>
           </div>
         </CardContent>
       </Card>

@@ -1,6 +1,7 @@
 "use client"
 
-import { Fragment, useEffect, useRef, useState, useCallback } from "react"
+import { Fragment, useEffect, useRef, useState, useCallback, useMemo } from "react"
+import { useTranslation } from "react-i18next"
 import { useChat } from "@/hooks/useChat"
 import { MessageBubble } from "./MessageBubble"
 import { ChatInput } from "./ChatInput"
@@ -29,30 +30,35 @@ interface ChatWindowProps {
   threadTitle?: string
 }
 
-const SUGGESTED_PROMPTS = [
-  {
-    icon: Sparkles,
-    label: "Creative writing",
-    prompt: "Help me write a creative short story about a time traveler",
-  },
-  {
-    icon: Code,
-    label: "Code review",
-    prompt: "Review this code and suggest improvements for better performance",
-  },
-  {
-    icon: BookOpen,
-    label: "Explain concept",
-    prompt: "Explain quantum computing in simple terms with examples",
-  },
-  {
-    icon: Lightbulb,
-    label: "Brainstorm ideas",
-    prompt: "Help me brainstorm innovative product ideas for remote workers",
-  },
-]
-
 export function ChatWindow({ threadId, threadTitle }: ChatWindowProps) {
+  const { t } = useTranslation()
+
+  const suggestedPrompts = useMemo(
+    () =>
+      [
+        {
+          icon: Sparkles,
+          labelKey: "chat.suggest-creative",
+          promptKey: "chat.prompt-creative",
+        },
+        {
+          icon: Code,
+          labelKey: "chat.suggest-code",
+          promptKey: "chat.prompt-code",
+        },
+        {
+          icon: BookOpen,
+          labelKey: "chat.suggest-explain",
+          promptKey: "chat.prompt-explain",
+        },
+        {
+          icon: Lightbulb,
+          labelKey: "chat.suggest-brainstorm",
+          promptKey: "chat.prompt-brainstorm",
+        },
+      ] as const,
+    [],
+  )
   const defaultModel =
     process.env.NEXT_PUBLIC_OPENROUTER_DEFAULT_MODEL || "openai/gpt-4o-mini"
   const scrollEndRef = useRef<HTMLDivElement>(null)
@@ -119,7 +125,7 @@ export function ChatWindow({ threadId, threadTitle }: ChatWindowProps) {
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-border px-3 py-2 sm:px-4 sm:py-3 shrink-0">
         <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
           <h1 className="font-medium text-sm truncate max-w-[min(100%,280px)]">
-            {threadTitle || "New Thread"}
+            {threadTitle || t("chat.new-thread-title")}
           </h1>
           <TokenUsageLabel
             totalTokens={threadUsage.totalTokens}
@@ -132,7 +138,7 @@ export function ChatWindow({ threadId, threadTitle }: ChatWindowProps) {
             <Badge
               variant="secondary"
               className="text-xs font-normal max-w-[140px] truncate animate-pulse"
-              title={`Calling sub-agent ${subAgentActivity.name}`}
+              title={t("chat.calling-sub-agent", { name: subAgentActivity.name })}
             >
               {subAgentActivity.name}…
             </Badge>
@@ -146,7 +152,7 @@ export function ChatWindow({ threadId, threadTitle }: ChatWindowProps) {
               onClick={() => setSubSidebarOpen((o) => !o)}
             >
               <Layers className="h-3.5 w-3.5" />
-              Sub-threads
+              {t("chat.sub-threads")}
             </Button>
           )}
         </div>
@@ -164,21 +170,21 @@ export function ChatWindow({ threadId, threadTitle }: ChatWindowProps) {
                 <Sparkles className="h-8 w-8 text-primary" />
               </div>
               <h2 className="text-xl font-semibold mb-2">
-                Start a conversation
+                {t("chat.start-conversation")}
               </h2>
               <p className="text-muted-foreground text-sm text-center mb-8 max-w-sm">
-                Ask anything or choose a suggestion below to get started
+                {t("chat.start-hint")}
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-lg">
-                {SUGGESTED_PROMPTS.map((suggestion) => (
+                {suggestedPrompts.map((suggestion) => (
                   <Button
-                    key={suggestion.label}
+                    key={suggestion.labelKey}
                     variant="outline"
-                    className="h-auto py-3 px-4 justify-start gap-3 text-left"
-                    onClick={() => handleSuggestedPrompt(suggestion.prompt)}
+                    className="h-auto py-3 px-4 justify-start gap-3 text-start"
+                    onClick={() => handleSuggestedPrompt(t(suggestion.promptKey))}
                   >
                     <suggestion.icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    <span className="text-sm">{suggestion.label}</span>
+                    <span className="text-sm">{t(suggestion.labelKey)}</span>
                   </Button>
                 ))}
               </div>

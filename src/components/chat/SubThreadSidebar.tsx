@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import type { SubThreadListItem, SubThreadListStatus } from "@/types"
@@ -27,16 +28,18 @@ export function SubThreadSidebar({
   items,
   onSelectSubThread,
 }: SubThreadSidebarProps) {
+  const { t } = useTranslation()
+
   if (!open) {
     return (
-      <div className="hidden lg:flex shrink-0 w-10 border-l border-border bg-card/30 flex-col items-center py-2">
+      <div className="hidden lg:flex shrink-0 w-10 border-s border-border bg-card/30 flex-col items-center py-2">
         <Button
           type="button"
           variant="ghost"
           size="icon"
           className="h-8 w-8"
           onClick={() => onOpenChange(true)}
-          aria-label="Open sub-threads panel"
+          aria-label={t("chat.subthreads-open-panel")}
         >
           <PanelRight className="h-4 w-4" />
         </Button>
@@ -45,16 +48,16 @@ export function SubThreadSidebar({
   }
 
   return (
-    <aside className="hidden lg:flex w-[min(100%,200px)] shrink-0 border-l border-border bg-card/40 flex-col">
+    <aside className="hidden lg:flex w-[min(100%,200px)] shrink-0 border-s border-border bg-card/40 flex-col">
       <div className="flex items-center justify-between gap-1 border-b border-border px-2 py-2">
-        <span className="text-xs font-medium truncate">Sub-threads</span>
+        <span className="text-xs font-medium truncate">{t("chat.subthreads-title")}</span>
         <Button
           type="button"
           variant="ghost"
           size="icon"
           className="h-8 w-8 shrink-0"
           onClick={() => onOpenChange(false)}
-          aria-label="Collapse sub-threads panel"
+          aria-label={t("chat.subthreads-collapse-panel")}
         >
           <PanelRightClose className="h-4 w-4" />
         </Button>
@@ -62,7 +65,7 @@ export function SubThreadSidebar({
       <div className="flex-1 overflow-y-auto p-1.5 space-y-1">
         {items.length === 0 ? (
           <p className="text-[11px] text-muted-foreground px-1 py-3 text-center leading-snug">
-            No sub-agents yet for this thread.
+            {t("chat.subthreads-empty")}
           </p>
         ) : (
           items.map((item) => (
@@ -70,7 +73,7 @@ export function SubThreadSidebar({
               key={item.id}
               type="button"
               onClick={() => onSelectSubThread(item.id)}
-              className="w-full rounded-md border border-transparent px-2 py-1.5 text-left text-xs hover:bg-accent/50 hover:border-border transition-colors"
+              className="w-full rounded-md border border-transparent px-2 py-1.5 text-start text-xs hover:bg-accent/50 hover:border-border transition-colors"
             >
               <div className="flex items-center gap-1 min-w-0">
                 <span className="font-mono truncate flex-1">{item.subAgentName}</span>
@@ -78,11 +81,8 @@ export function SubThreadSidebar({
                   <Badge
                     variant={statusVariant(item.status)}
                     className="text-[9px] uppercase px-1 py-0 h-4 shrink-0 tabular-nums"
-                    title={item.status.toLowerCase()}
                   >
-                    {item.status === "FAILED"
-                      ? "!"
-                      : "…"}
+                    {item.status.toLowerCase()}
                   </Badge>
                 )}
               </div>

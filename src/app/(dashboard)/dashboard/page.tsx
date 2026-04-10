@@ -1,19 +1,18 @@
 import { requireAdmin } from "@/lib/guards"
 import { UsageStats } from "@/components/dashboard/UsageStats"
 import { BuyCoinsModal } from "@/components/dashboard/BuyCoinsModal"
+import { DashboardSectionHeading } from "@/components/dashboard/DashboardSectionHeading"
 
 export default async function DashboardOverviewPage() {
   const session = await requireAdmin()
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold tracking-tight">Your Overview</h2>
-          <p className="text-sm text-muted-foreground">
-            A quick glance at your account usage and recent activity.
-          </p>
-        </div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <DashboardSectionHeading
+          titleKey="dashboard.overview-page-title"
+          descriptionKey="dashboard.overview-page-desc"
+        />
         <BuyCoinsModal />
       </div>
 

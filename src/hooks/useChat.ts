@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
+import { i18n } from "@/i18n/client"
 import type {
   ChatMessage,
   SubThreadListItem,
@@ -11,7 +12,7 @@ import type {
 } from "@/types"
 
 function notifyChatError() {
-  toast.error("Something went wrong!")
+  toast.error(i18n.t("chat.something-wrong"))
 }
 
 interface ThreadsQueryData {

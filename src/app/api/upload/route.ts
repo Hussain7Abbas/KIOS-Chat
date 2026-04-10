@@ -3,7 +3,6 @@ import { requireAuthApi } from "@/lib/guards"
 import { prisma } from "@/lib/prisma"
 import { validateFile, uploadToImageKit } from "@/lib/upload"
 import { resolveUploadedMimeType } from "@/lib/mime"
-import { pdfUploadRejectionMessage } from "@/lib/fileUploadValidation"
 
 export async function POST(request: NextRequest) {
   const { session, error } = await requireAuthApi(request)
@@ -15,24 +14,20 @@ export async function POST(request: NextRequest) {
     const threadId = formData.get("threadId") as string | null
 
     if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 })
+      return NextResponse.json({ error: "upload.no-file" }, { status: 400 })
     }
 
     if (!threadId) {
-      return NextResponse.json(
-        { error: "Thread ID is required" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "upload.thread-id-required" }, { status: 400 })
     }
 
-    // Verify thread ownership
     const thread = await prisma.thread.findUnique({
       where: { id: threadId },
       select: { userId: true },
     })
 
     if (!thread || thread.userId !== session.user.id) {
-      return NextResponse.json({ error: "Thread not found" }, { status: 404 })
+      return NextResponse.json({ error: "upload.thread-not-found" }, { status: 404 })
     }
 
     const validation = validateFile(file)
@@ -40,21 +35,25 @@ export async function POST(request: NextRequest) {
       if (validation.kind === "pdf") {
         return NextResponse.json(
           {
-            error: pdfUploadRejectionMessage(),
+            error: "upload.pdf-use-ocr",
             showOcrModal: true,
           },
-          { status: 400 }
+          { status: 400 },
         )
       }
-      return NextResponse.json({ error: validation.error }, { status: 400 })
+      return NextResponse.json(
+        {
+          error: validation.errorKey,
+          errorParams: validation.errorParams,
+        },
+        { status: 400 },
+      )
     }
 
-    // Upload to ImageKit
     const { url } = await uploadToImageKit(file)
 
     const mimeType = resolveUploadedMimeType(file)
 
-    // Save to database
     const fileRecord = await prisma.file.create({
       data: {
         threadId,
@@ -73,12 +72,9 @@ export async function POST(request: NextRequest) {
         mimeType,
         size: fileRecord.size,
       },
-      { status: 201 }
+      { status: 201 },
     )
   } catch {
-    return NextResponse.json(
-      { error: "Failed to upload file" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: "upload.server-failed" }, { status: 500 })
   }
 }

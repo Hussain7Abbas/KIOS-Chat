@@ -1,43 +1,50 @@
-import { resolveUploadedMimeType, isPdfAttachment } from "@/lib/mime";
+import { resolveUploadedMimeType, isPdfAttachment } from "@/lib/mime"
 
-export const OCR_SERVICE_URL = "https://kios-scans.vercel.app";
+export const OCR_SERVICE_URL = "https://kios-scans.vercel.app"
 
 export function pdfUploadRejectionMessage(): string {
-  return `Please convert PDF documents to text before uploading. You can use our OCR service at "${OCR_SERVICE_URL}".`;
+  return `Please convert PDF documents to text before uploading. You can use our OCR service at "${OCR_SERVICE_URL}".`
 }
 
-const ALLOWED_DOCUMENT_TYPES = new Set<string>(["text/plain"]);
+const ALLOWED_DOCUMENT_TYPES = new Set<string>(["text/plain"])
 
-export const MAX_CHAT_UPLOAD_BYTES = 10 * 1024 * 1024;
+export const MAX_CHAT_UPLOAD_BYTES = 10 * 1024 * 1024
 
 export type ChatUploadValidationResult =
   | { valid: true }
   | { valid: false; kind: "pdf" }
-  | { valid: false; kind: "reject"; error: string };
+  | {
+      valid: false
+      kind: "reject"
+      errorKey: string
+      errorParams?: Record<string, string>
+    }
 
 export function validateChatUpload(file: File): ChatUploadValidationResult {
-  const effectiveType = resolveUploadedMimeType(file);
+  const effectiveType = resolveUploadedMimeType(file)
 
-  // PDF is allowed in the file picker; we do not upload it—client shows OCR modal.
   if (isPdfAttachment(effectiveType, file.name)) {
-    return { valid: false, kind: "pdf" };
+    return { valid: false, kind: "pdf" }
   }
 
   if (!ALLOWED_DOCUMENT_TYPES.has(effectiveType)) {
     return {
       valid: false,
       kind: "reject",
-      error: `File type "${file.type || "(empty)"}" is not allowed. You can upload plain text (.txt), or choose a PDF to open the OCR conversion helper—other types are not supported.`,
-    };
+      errorKey: "upload.file-type",
+      errorParams: {
+        type: file.type || "(empty)",
+      },
+    }
   }
 
   if (file.size > MAX_CHAT_UPLOAD_BYTES) {
     return {
       valid: false,
       kind: "reject",
-      error: "File size exceeds 10MB limit.",
-    };
+      errorKey: "upload.file-too-large",
+    }
   }
 
-  return { valid: true };
+  return { valid: true }
 }

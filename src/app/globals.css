@@ -128,4 +128,8 @@
   html {
     @apply font-sans;
   }
+  html[dir="rtl"] {
+    font-family: var(--font-arabic), var(--font-geist-sans), ui-sans-serif, system-ui,
+      sans-serif;
+  }
 }

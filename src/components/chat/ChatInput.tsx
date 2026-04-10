@@ -1,6 +1,7 @@
 "use client"
 
 import { useRef, useState, useCallback } from "react"
+import { useTranslation } from "react-i18next"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
@@ -26,6 +27,7 @@ interface ChatInputProps {
 }
 
 export function ChatInput({ threadId, isStreaming, onSend }: ChatInputProps) {
+  const { t } = useTranslation()
   const [input, setInput] = useState("")
   const [ocrModalOpen, setOcrModalOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -88,11 +90,9 @@ export function ChatInput({ threadId, isStreaming, onSend }: ChatInputProps) {
       <Dialog open={ocrModalOpen} onOpenChange={setOcrModalOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Convert this PDF with KIOS Scans</DialogTitle>
+            <DialogTitle>{t("chat.ocr-title")}</DialogTitle>
             <DialogDescription>
-              PDFs are not attached directly in chat. Use KIOS Scans to turn
-              your PDF into text, then upload the resulting .txt file or paste
-              the text into your message.
+              {t("chat.ocr-description")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-1">
@@ -101,7 +101,7 @@ export function ChatInput({ threadId, isStreaming, onSend }: ChatInputProps) {
               variant="outline"
               onClick={() => setOcrModalOpen(false)}
             >
-              Close
+              {t("common.close")}
             </Button>
             <a
               href={OCR_SERVICE_URL}
@@ -109,7 +109,7 @@ export function ChatInput({ threadId, isStreaming, onSend }: ChatInputProps) {
               rel="noopener noreferrer"
               className={cn(buttonVariants())}
             >
-              Open KIOS Scans
+              {t("chat.open-kios-scans")}
             </a>
           </DialogFooter>
         </DialogContent>
@@ -168,7 +168,7 @@ export function ChatInput({ threadId, isStreaming, onSend }: ChatInputProps) {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           onInput={handleInput}
-          placeholder="Type a message..."
+          placeholder={t("chat.type-message")}
           rows={1}
           className="min-h-[40px] max-h-[200px] resize-none bg-card border-border/50"
         />

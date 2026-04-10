@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -25,6 +26,8 @@ export function SubAgentCard({
   onDelete,
   isDeleting,
 }: SubAgentCardProps) {
+  const { t } = useTranslation()
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
@@ -35,7 +38,7 @@ export function SubAgentCard({
             {agent.instructions.length > 120 ? "…" : ""}
             {agent.params.length > 0 && (
               <span className="mt-1 block text-[11px] text-muted-foreground font-mono line-clamp-2">
-                In:{" "}
+                {t("subagent.card-in-label")}{" "}
                 {agent.params
                   .map((p) => `${p.name}:${p.type || "string"}`)
                   .join(", ")}
@@ -50,7 +53,7 @@ export function SubAgentCard({
             size="icon"
             className="h-8 w-8"
             onClick={() => onEdit(agent)}
-            aria-label={`Edit ${agent.name}`}
+            aria-label={t("subagent.card-edit-aria", { name: agent.name })}
           >
             <Pencil className="h-4 w-4" />
           </Button>
@@ -61,7 +64,7 @@ export function SubAgentCard({
             className="h-8 w-8 text-destructive"
             onClick={() => onDelete(agent)}
             disabled={isDeleting}
-            aria-label={`Delete ${agent.name}`}
+            aria-label={t("subagent.card-delete-aria", { name: agent.name })}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -70,9 +73,9 @@ export function SubAgentCard({
       <CardContent className="flex flex-wrap gap-2 pt-0">
         <Badge variant="secondary">{agent.model}</Badge>
         <Badge variant="outline">{agent.outputFormat}</Badge>
-        <Badge variant="outline">{agent.params.length} in</Badge>
+        <Badge variant="outline">{agent.params.length} {t("common.in")}</Badge>
         <Badge variant="outline">
-          {(agent.outputParams ?? []).length} out
+          {(agent.outputParams ?? []).length} {t("common.out")}
         </Badge>
       </CardContent>
     </Card>

@@ -1,7 +1,9 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
+import { i18n } from "@/i18n/client"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
@@ -84,6 +86,7 @@ export function SubThreadBox({
   onListUpdated,
   onMainThreadUpdated,
 }: SubThreadBoxProps) {
+  const { t } = useTranslation()
   const [messages, setMessages] = useState<SubThreadMessageItem[]>([])
   const [usage, setUsage] = useState<{
     totalTokens: number | null
@@ -187,7 +190,7 @@ export function SubThreadBox({
         }
       )
       if (!res.ok) {
-        let msg = "Could not submit to main chat"
+        let msg = i18n.t("chat.submit-main-failed")
         try {
           const body = (await res.json()) as { error?: string }
           if (typeof body.error === "string") msg = body.error
@@ -202,7 +205,7 @@ export function SubThreadBox({
       await onListUpdated()
       await onMainThreadUpdated()
     } catch {
-      toast.error("Could not submit to main chat")
+      toast.error(i18n.t("chat.submit-main-failed"))
     } finally {
       setSubmittingMessageId(null)
     }
@@ -229,7 +232,7 @@ export function SubThreadBox({
       )
 
       if (!res.ok) {
-        let msg = "Could not send message"
+        let msg = i18n.t("chat.subthread-chat-failed")
         try {
           const errBody = (await res.json()) as { error?: string }
           if (typeof errBody.error === "string") msg = errBody.error
@@ -294,7 +297,7 @@ export function SubThreadBox({
       await loadDetail()
       await onListUpdated()
     } catch {
-      toast.error("Sub-agent reply failed")
+      toast.error(i18n.t("chat.subagent-reply-failed"))
       await loadDetail()
       await onListUpdated()
     } finally {
@@ -330,11 +333,10 @@ export function SubThreadBox({
             totalTokens={usage.totalTokens}
             contextLength={usage.contextLength}
             className="text-[10px]"
-            prefix="Tok"
           />
 
           {loadError && !isRunning && (
-            <p className="text-xs text-destructive">Could not load sub-thread.</p>
+            <p className="text-xs text-destructive">{t("chat.subthread-load-error")}</p>
           )}
 
           {item.status === "FAILED" && item.error && (
@@ -344,7 +346,7 @@ export function SubThreadBox({
           {isRunning && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Running sub-agent…
+              {t("chat.subthread-running")}
             </div>
           )}
 
@@ -369,7 +371,7 @@ export function SubThreadBox({
                           className="shrink-0 h-8 w-8 mt-0.5"
                           disabled={submittingMessageId != null}
                           onClick={() => void submitAssistantMessage(m.id)}
-                          aria-label="Submit this output"
+                          aria-label={t("chat.subthread-commit-aria")}
                         >
                           {submittingMessageId === m.id ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -462,7 +464,7 @@ export function SubThreadBox({
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Message this sub-agent…"
+              placeholder={t("chat.subthread-placeholder")}
               className="min-h-[40px] max-h-[120px] text-sm resize-none"
               disabled={isSending}
               onKeyDown={(e) => {
@@ -478,7 +480,7 @@ export function SubThreadBox({
               className="shrink-0 h-10 w-10"
               disabled={!canSend}
               onClick={() => void sendFollowUp()}
-              aria-label="Send to sub-agent"
+              aria-label={t("chat.subthread-send-aria")}
             >
               {isSending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

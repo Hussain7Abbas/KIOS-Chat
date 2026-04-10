@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Check, Zap } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 interface SubscriptionCardProps {
   coins: number
@@ -22,6 +23,7 @@ export function SubscriptionCard({
   onPurchase,
   isPending,
 }: SubscriptionCardProps) {
+  const { t } = useTranslation()
   const formattedPrice = (price / 100).toFixed(2)
 
   return (
@@ -31,39 +33,39 @@ export function SubscriptionCard({
       }`}
     >
       {isPopular && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+        <div className="absolute -top-3 start-1/2 -translate-x-1/2">
           <Badge className="gap-1">
             <Zap className="h-3 w-3" />
-            Most Popular
+            {t("subscription.most-popular")}
           </Badge>
         </div>
       )}
       <CardHeader className="text-center pb-2">
         <CardTitle className="text-lg">{label}</CardTitle>
-        <CardDescription>{coins} coins</CardDescription>
+        <CardDescription>{coins} {t("common.coins")}</CardDescription>
       </CardHeader>
       <CardContent className="text-center space-y-4">
         <div>
           <span className="text-3xl font-bold">${formattedPrice}</span>
-          <span className="text-muted-foreground text-sm ml-1">one-time</span>
+          <span className="text-muted-foreground text-sm ms-1">{t("subscription.one-time-label")}</span>
         </div>
 
-        <ul className="space-y-2 text-sm text-left">
+        <ul className="space-y-2 text-sm text-start">
           <li className="flex items-center gap-2">
             <Check className="h-4 w-4 text-green-500" />
-            <span>{coins} coins added to your balance</span>
+            <span>{t("subscription.coins-added", { count: coins })}</span>
           </li>
           <li className="flex items-center gap-2">
             <Check className="h-4 w-4 text-green-500" />
-            <span>All AI models</span>
+            <span>{t("subscription.feature-all-models")}</span>
           </li>
           <li className="flex items-center gap-2">
             <Check className="h-4 w-4 text-green-500" />
-            <span>File attachments</span>
+            <span>{t("subscription.feature-attachments")}</span>
           </li>
           <li className="flex items-center gap-2">
             <Check className="h-4 w-4 text-green-500" />
-            <span>Coins never expire</span>
+            <span>{t("subscription.feature-no-expire")}</span>
           </li>
         </ul>
 
@@ -73,7 +75,7 @@ export function SubscriptionCard({
           onClick={onPurchase}
           disabled={isPending}
         >
-          Purchase
+          {t("common.purchase")}
         </Button>
       </CardContent>
     </Card>
