@@ -134,45 +134,6 @@ export function AgentPromptEditor({
           </div>
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            {t("agent-editor.preview-title")}
-            <Badge variant="secondary" className="text-xs">
-              {t("common.live")}
-            </Badge>
-          </CardTitle>
-          <CardDescription>
-            {t("agent-editor.preview-desc")}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-lg border border-border bg-background/50 p-4 space-y-4">
-            {prompt && (
-              <div className="flex gap-3 text-sm text-muted-foreground italic">
-                <Bot className="h-5 w-5 shrink-0 mt-0.5" />
-                <p className="truncate">
-                  {t("common.system")}: {prompt.slice(0, 150)}
-                  {prompt.length > 150 ? "..." : ""}
-                </p>
-              </div>
-            )}
-            <div className="flex gap-3 text-sm">
-              <User className="h-5 w-5 shrink-0 mt-0.5 text-primary" />
-              <p>{t("agent-editor.preview-user-msg")}</p>
-            </div>
-            <div className="flex gap-3 text-sm text-muted-foreground">
-              <Bot className="h-5 w-5 shrink-0 mt-0.5" />
-              <p>
-                {prompt
-                  ? t("agent-editor.preview-with-prompt")
-                  : t("agent-editor.preview-no-prompt")}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }
