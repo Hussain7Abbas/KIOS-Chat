@@ -157,6 +157,7 @@ pm2-deploy: build
 
 sync:
 	git pull
+	bun install
 	bunx prisma generate
 	bunx prisma migrate deploy
 	bun run build
